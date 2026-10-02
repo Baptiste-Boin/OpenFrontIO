@@ -9,6 +9,18 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS sessions (
  token_hash text PRIMARY KEY, user_id uuid NOT NULL REFERENCES users(id), expires_at timestamptz NOT NULL
 );
+ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider text NOT NULL DEFAULT 'discord';
+CREATE TABLE IF NOT EXISTS rooms (
+ id uuid PRIMARY KEY, name text NOT NULL, code text UNIQUE NOT NULL,
+ game_id text UNIQUE NOT NULL, worker integer NOT NULL, capacity integer NOT NULL CHECK(capacity BETWEEN 2 AND 200),
+ status text NOT NULL DEFAULT 'lobby', config jsonb NOT NULL,
+ created_by uuid NOT NULL REFERENCES users(id), release text NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS room_players (
+ room_id uuid NOT NULL REFERENCES rooms(id), user_id uuid NOT NULL REFERENCES users(id),
+ joined_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(room_id,user_id)
+);
 CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
 CREATE TABLE IF NOT EXISTS tournaments (
  id uuid PRIMARY KEY, name text NOT NULL, starts_at timestamptz NOT NULL,

@@ -40,4 +40,23 @@ describe("Azertix solo and multiplayer authentication", () => {
     await expect(getPlayToken()).rejects.toThrow();
     expect(assign).toHaveBeenCalledWith("/login");
   });
+  it("requests a signed ticket for the current code room", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ jwt: "signed-room-ticket" }),
+    } as Response);
+    expect(await getPlayToken(false, "a123456789")).toBe("signed-room-ticket");
+    expect(fetch).toHaveBeenCalledWith(
+      "https://openfront.test/platform-api/auth/play-token",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ gameId: "a123456789" }),
+      }),
+    );
+    expect(assign).not.toHaveBeenCalled();
+  });
+  it("requests the code form when a room grant is absent", async () => {
+    await expect(getPlayToken(false, "a123456789")).rejects.toThrow();
+    expect(assign).toHaveBeenCalledWith("/login?join=1");
+  });
 });

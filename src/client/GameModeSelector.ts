@@ -645,7 +645,100 @@ export class GameModeSelector extends LitElement {
     }
   }
 
+  private async joinCodeRoom(event: Event) {
+    event.preventDefault();
+    const form = event.currentTarget as HTMLFormElement;
+    const submit = form.querySelector("button")!;
+    submit.disabled = true;
+    try {
+      const code = String(new FormData(form).get("code") ?? "")
+        .replace(/[\s-]/g, "")
+        .toUpperCase();
+      const username =
+        (
+          document.querySelector("username-input") as UsernameInput | null
+        )?.getUsername() ?? "Player";
+      const response = await fetch("/platform-api/auth/code", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, username }),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error ?? translateText("azertix.code_required"));
+      window.location.href = `/?gameID=${encodeURIComponent(result.gameId)}`;
+    } catch (error) {
+      showToast(
+        error instanceof Error
+          ? error.message
+          : translateText("azertix.code_required"),
+        "red",
+      );
+    } finally {
+      submit.disabled = false;
+    }
+  }
+
+  private renderCodePlay() {
+    return html`<div class="flex flex-col gap-4 w-full px-4 sm:px-0 pb-4">
+      <form
+        @submit=${this.joinCodeRoom}
+        class="bg-surface rounded-lg p-5 flex flex-col gap-3"
+      >
+        <label
+          for="room-code"
+          class="text-white uppercase text-sm font-medium tracking-wider"
+          >${translateText("azertix.room_code")}</label
+        >
+        <p class="text-sm text-white/70">
+          ${translateText("azertix.code_help")}
+        </p>
+        <div class="flex gap-3 flex-col sm:flex-row">
+          <input
+            id="room-code"
+            name="code"
+            required
+            minlength="8"
+            maxlength="9"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="ABCD2345"
+            class="bg-black/25 border border-white/15 rounded-lg p-3 text-white font-mono tracking-[0.18em] uppercase flex-1 min-w-0"
+          /><button
+            type="submit"
+            class="bg-malibu-blue hover:bg-aquarius rounded-lg p-3 px-6 text-white font-medium uppercase"
+          >
+            ${translateText("main.join")}
+          </button>
+        </div>
+      </form>
+      <div class="flex gap-4 h-14">
+        <div class="flex-1">
+          ${this.renderSmallActionCard(
+            translateText("main.solo"),
+            this.openSinglePlayerModal,
+            SECONDARY_ACTION,
+          )}
+        </div>
+        <div class="flex-1">
+          ${this.renderSmallActionCard(
+            translateText("main.tutorial"),
+            this.startTutorial,
+            TUTORIAL_ACTION,
+          )}
+        </div>
+      </div>
+      <a
+        href="/admin"
+        class="text-sm text-white/60 hover:text-white text-center py-2"
+        >${translateText("azertix.organizer")}</a
+      >
+    </div>`;
+  }
+
   render() {
+    if (window.BOOTSTRAP_CONFIG?.platformApiBase) return this.renderCodePlay();
     const ffa = this.lobbies?.games?.["ffa"]?.[0];
     const teams = this.lobbies?.games?.["team"]?.[0];
     const special = this.lobbies?.games?.["special"]?.[0];

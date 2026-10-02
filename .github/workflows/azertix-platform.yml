@@ -28,6 +28,6 @@ jobs:
         working-directory: platform
       - run: npm test
         working-directory: platform
-      - run: node --check platform/server.mjs && node --check platform/bot.mjs && node --check platform/public/app.js
+      - run: node --check platform/server.mjs && node --check platform/rooms.mjs && node --check platform/bot.mjs && node --check platform/public/app.js
       - run: for script in deploy/vps/*.sh; do bash -n "$script"; done
       - run: RELEASE_SHA=$(git rev-parse HEAD) docker compose --env-file deploy/vps/.env.ci --file deploy/vps/compose.yml config --quiet

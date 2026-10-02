@@ -10,6 +10,7 @@ import pg from "pg";
 import { createClient } from "redis";
 import { z } from "zod";
 import { startDiscordBot } from "./bot.mjs";
+import { registerRooms } from "./rooms.mjs";
 import {
   cookie,
   decrypt,
@@ -115,7 +116,7 @@ const oauthReady = () =>
   Boolean(
     env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET && env.DISCORD_GUILD_ID,
   );
-async function mint(user, guest = false) {
+async function mint(user, guest = false, provider) {
   const sub = Buffer.from(user.id.replaceAll("-", ""), "hex").toString(
     "base64url",
   );
@@ -128,7 +129,18 @@ async function mint(user, guest = false) {
         : user.role === "MODERATOR"
           ? "mod"
           : "player";
-  return new SignJWT({ role, provider: guest ? "guest" : "discord" })
+  return new SignJWT({
+    role,
+    provider:
+      provider ??
+      (guest
+        ? "guest"
+        : user.auth_provider === "owner"
+          ? "owner"
+          : user.auth_provider === "guest"
+            ? "guest"
+            : "discord"),
+  })
     .setProtectedHeader({ alg: "EdDSA", kid: jwk.kid })
     .setSubject(sub)
     .setJti(crypto.randomUUID())
@@ -158,7 +170,7 @@ async function sessionUser(req) {
 }
 async function auth(req, res, next) {
   req.user = await sessionUser(req);
-  if (!req.user) throw fail(401, "Connexion Discord requise");
+  if (!req.user) throw fail(401, "Connexion requise");
   if (isBanned(req.user)) throw fail(403, "Compte banni");
   next();
 }
@@ -237,6 +249,8 @@ app.get("/config", (req, res) =>
     name: "AzertixYT OpenFront",
     release: env.GIT_COMMIT,
     discordReady: oauthReady(),
+    ownerReady: /^[a-f0-9]{64}$/.test(env.OWNER_ACCESS_HASH ?? ""),
+    codeAccess: true,
     guildId: env.DISCORD_GUILD_ID ?? null,
   }),
 );
@@ -343,7 +357,7 @@ app.post("/auth/refresh", csrf, async (req, res) => {
     return res.status(401).json({ error: "Connexion requise" });
   }
   if (isBanned(user)) throw fail(403, "Compte banni");
-  await verifyMembership(user);
+  if (user.auth_provider === "discord") await verifyMembership(user);
   const jwt = await mint(user);
   res.json({ jwt, token: jwt, expiresIn: 300 });
 });
@@ -390,9 +404,10 @@ app.post("/auth/logout", csrf, async (req, res) => {
 async function historyFor(userId) {
   return (
     await db.query(
-      `SELECT r.game_id,r.points,r.winner,m.created_at,t.name,m.round
-    FROM results r JOIN tournaments t ON t.id=r.tournament_id
-    LEFT JOIN matches m ON m.game_id=r.game_id WHERE r.user_id=$1 ORDER BY m.created_at DESC LIMIT 100`,
+      `SELECT r.game_id,r.points,r.winner,coalesce(m.created_at,s.created_at) created_at,coalesce(t.name,s.name) name,m.round
+    FROM results r LEFT JOIN tournaments t ON t.id=r.tournament_id
+    LEFT JOIN matches m ON m.game_id=r.game_id LEFT JOIN rooms s ON s.game_id=r.game_id
+    WHERE r.user_id=$1 ORDER BY coalesce(m.created_at,s.created_at) DESC LIMIT 100`,
       [userId],
     )
   ).rows;
@@ -410,6 +425,7 @@ app.get("/me", auth, async (req, res) => {
   res.json({
     publicId: public_id,
     discordId: discord_id,
+    provider: req.user.auth_provider,
     username,
     avatar,
     role,
@@ -443,7 +459,8 @@ app.get("/users/@me", async (req, res) => {
   if (payload.provider !== "guest" && !user) throw fail(401, "Compte absent");
   if (user && isBanned(user)) throw fail(403, "Compte banni");
   res.json({
-    user: user ? { discord: user.discord_data } : {},
+    user:
+      user?.auth_provider === "discord" ? { discord: user.discord_data } : {},
     player: {
       publicId: user?.public_id ?? id,
       username: user?.username ?? null,
@@ -548,6 +565,24 @@ app.post("/tournaments/:id/unregister", csrf, auth, async (req, res) => {
     await audit(client, req.user, "unregister", id);
   });
   res.sendStatus(204);
+});
+registerRooms({
+  app,
+  db,
+  env,
+  origin,
+  csrf,
+  auth,
+  admin,
+  parse,
+  fail,
+  transaction,
+  audit,
+  game,
+  mint,
+  sessionUser,
+  sessionCookie,
+  verifyMembership,
 });
 app.use("/admin", csrf, auth);
 app.get(
@@ -834,7 +869,7 @@ app.get(
     res.json(
       (
         await db.query(
-          "SELECT public_id,discord_id,username,role,banned,ban_until,ban_reason,created_at FROM users WHERE username ILIKE $1 OR discord_id=$2 ORDER BY created_at DESC LIMIT 100",
+          "SELECT public_id,discord_id,username,role,auth_provider,banned,ban_until,ban_reason,created_at FROM users WHERE username ILIKE $1 OR discord_id=$2 ORDER BY created_at DESC LIMIT 100",
           ["%" + query + "%", query],
         )
       ).rows,
@@ -910,8 +945,17 @@ app.post("/admin/users/:id/role", admin(["SUPER_ADMIN"]), async (req, res) => {
       ])
     ).rows[0];
     if (!target) throw fail(404, "Joueur absent");
-    if (target.id === req.user.id || bootstrapIds.includes(target.discord_id))
+    if (
+      target.id === req.user.id ||
+      target.auth_provider === "owner" ||
+      bootstrapIds.includes(target.discord_id)
+    )
       throw fail(409, "Rôle du compte de secours protégé");
+    if (target.auth_provider === "guest" && role !== "PLAYER")
+      throw fail(
+        403,
+        "Un compte invité ne peut pas recevoir de droits administrateur",
+      );
     await client.query("UPDATE users SET role=$1 WHERE id=$2", [
       role,
       target.id,
@@ -953,7 +997,31 @@ app.post("/game/:id", internal, async (req, res) => {
       [gameId, scrubRecord(record)],
     );
     if (!insert.rowCount) return;
-    if (!match || match.status === "cancelled") return;
+    if (!match) {
+      const room = (
+        await client.query("SELECT * FROM rooms WHERE game_id=$1 FOR UPDATE", [
+          gameId,
+        ])
+      ).rows[0];
+      if (!room || ["cancelled", "finished"].includes(room.status)) return;
+      const winners = winningClients(record.info.winner);
+      if (winners.size)
+        for (const player of record.info.players) {
+          if (!uuid.safeParse(player.persistentID).success) continue;
+          const winner = winners.has(player.clientID);
+          await client.query(
+            `INSERT INTO results(game_id,tournament_id,user_id,winner,points)
+          SELECT $1,NULL,p.user_id,$3,$4 FROM room_players p WHERE p.room_id=$2 AND p.user_id=$5 ON CONFLICT DO NOTHING`,
+            [gameId, room.id, winner, winner ? 10 : 1, player.persistentID],
+          );
+        }
+      await client.query("UPDATE rooms SET status=$1 WHERE id=$2", [
+        winners.size ? "finished" : "cancelled",
+        room.id,
+      ]);
+      return;
+    }
+    if (match.status === "cancelled") return;
     const winners = winningClients(record.info.winner);
     // Aborted games never award participation points or wins.
     if (!winners.size) {

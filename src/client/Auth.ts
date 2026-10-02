@@ -764,10 +764,24 @@ export async function sendMagicLink(email: string): Promise<boolean> {
 }
 
 // WARNING: DO NOT EXPOSE THIS ID
-export async function getPlayToken(local = false): Promise<string> {
-  // This UUID is consumed only by LocalServer. Multiplayer still requires a signed Discord JWT.
+export async function getPlayToken(
+  local = false,
+  gameId?: string,
+): Promise<string> {
+  // Local simulation uses a UUID. Multiplayer uses a signed, room-scoped token.
   if (local && window.BOOTSTRAP_CONFIG?.platformApiBase)
     return getPersistentID();
+  if (window.BOOTSTRAP_CONFIG?.platformApiBase && gameId) {
+    const response = await fetch(`${getApiBase()}/auth/play-token`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gameId }),
+    });
+    if (response.ok) return (await response.json()).jwt;
+    window.location.assign("/login?join=1");
+    throw new Error(translateText("azertix.code_required"));
+  }
   const result = await userAuth();
   if (result !== false) return result.jwt;
   if (window.BOOTSTRAP_CONFIG?.platformApiBase) {

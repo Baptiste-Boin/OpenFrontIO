@@ -704,7 +704,8 @@ export class Transport {
     // Only the first join: the token is short-lived, and a later reconnect
     // must not present one that has since expired.
     const token =
-      this.lobbyConfig.creatorToken ?? (await getPlayToken(this.isLocal));
+      this.lobbyConfig.creatorToken ??
+      (await getPlayToken(this.isLocal, this.lobbyConfig.gameID));
     delete this.lobbyConfig.creatorToken;
     this.sendMsg({
       type: "join",
@@ -727,7 +728,7 @@ export class Transport {
       gameID: this.lobbyConfig.gameID,
       // Note: clientID is not sent - server looks it up from persistentID in token
       lastTurn: lastTurn,
-      token: await getPlayToken(this.isLocal),
+      token: await getPlayToken(this.isLocal, this.lobbyConfig.gameID),
       gitCommit: ClientEnv.gitCommit(),
     } satisfies ClientRejoinMessage);
   }

@@ -40,6 +40,7 @@ import { resolveVerifiedJoin } from "./Privilege";
 
 import { MapPlaylist } from "./MapPlaylist";
 import { setNoStoreHeaders } from "./NoStoreHeaders";
+import { platformJoinAllowed } from "./PlatformJoin";
 import { PrivilegeRefresher } from "./PrivilegeRefresher";
 import { startRankedCheckinLoops } from "./RankedCheckin";
 import { rejoinOrClose } from "./Rejoin";
@@ -181,6 +182,13 @@ export async function startWorker() {
       return res.status(401).json({ error: "Invalid creator token" });
     }
     const creatorPersistentID = auth.persistentId;
+    if (
+      ServerEnv.platformAuth() &&
+      !["root", "admin"].includes(auth.claims?.role ?? "")
+    )
+      return res
+        .status(403)
+        .json({ error: "Only the organizer can create rooms" });
 
     const parsed = CreateGameInputSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -576,6 +584,20 @@ export async function startWorker() {
           return;
         }
         const { persistentId, claims } = result;
+        if (
+          ServerEnv.platformAuth() &&
+          !platformJoinAllowed(
+            claims,
+            clientMsg.gameID,
+            Boolean(
+              gm.game(clientMsg.gameID)?.gameInfo().gameConfig?.allowedPublicIds
+                ?.length,
+            ),
+          )
+        ) {
+          ws.close(CloseCode.Unauthorized, CloseReason.InvalidToken);
+          return;
+        }
 
         if (claims?.role === "banned") {
           ws.close(CloseCode.Banned, CloseReason.Banned);
@@ -628,7 +650,12 @@ export async function startWorker() {
           const isReadmit = game?.wasAdmitted(persistentId) ?? false;
           const steamAuthed =
             isSteamAuthenticated(claims) ||
-            (ServerEnv.platformAuth() && claims?.provider === "discord");
+            (ServerEnv.platformAuth() &&
+              platformJoinAllowed(
+                claims,
+                clientMsg.gameID,
+                Boolean(game?.gameInfo().gameConfig?.allowedPublicIds?.length),
+              ));
           // SECURITY: the reject/skip/verify split (first joins must
           // present a token, only re-admits may omit it) lives in
           // planJoinVerify — see its doc comment. Steam-authenticated first

@@ -28,7 +28,7 @@ const status = {
 };
 let me = null,
   config = null,
-  currentTab = "live",
+  currentTab = "rooms",
   poll;
 async function api(path, body) {
   const response = await fetch(base + path, {
@@ -160,8 +160,36 @@ async function showTournament(id) {
   }
   d.showModal();
 }
-function login() {
-  app.innerHTML = `<section class="card login">${hero("Ta communauté. Ton terrain.", "Connecte ton compte Discord pour participer aux tournois, suivre tes résultats et retrouver ton profil.", "BIENVENUE")}<p class="muted">La participation est réservée aux membres du serveur Discord AzertixYT.</p>${config.discordReady ? '<a class="button" href="/platform-api/auth/login/discord">Se connecter avec Discord →</a>' : '<p class="pill">Connexion bientôt disponible</p><p class="muted">L’application Discord doit encore être configurée par l’administrateur.</p>'}<p><a class="muted" href="/">Continuer vers le jeu →</a></p></section>`;
+function login(
+  mode = location.pathname.startsWith("/admin") ? "owner" : "code",
+) {
+  const code = new URLSearchParams(location.search).get("code") ?? "";
+  app.innerHTML = `<section class="card login"><a class="back-link" href="/">← Retour au jeu</a><h1>${mode === "owner" ? "Connexion organisateur" : "Rejoindre un salon"}</h1><p class="muted">${mode === "owner" ? "Crée tes parties et partage un code avec les joueurs." : "Ton pseudo, le code de l’organisateur, et c’est parti."}</p><div class="tabs login-tabs"><button class="${mode === "code" ? "active" : ""}" data-login="code">Jouer avec un code</button><button class="${mode === "owner" ? "active" : ""}" data-login="owner">Organisateur</button></div>${mode === "owner" ? `<form id="owner-form"><label>Clé propriétaire<input name="key" type="password" autocomplete="current-password" required minlength="16" placeholder="Ta clé personnelle"></label><p class="error" id="login-error" role="alert"></p><button type="submit" ${config.ownerReady ? "" : "disabled"}>Ouvrir l’administration</button>${config.ownerReady ? '<p class="form-help">Ta clé est privée. Ne partage que les codes des salons.</p>' : '<p class="form-help">La connexion propriétaire est en cours d’activation.</p>'}</form>` : `<form id="code-form"><label>Pseudo<input name="username" autocomplete="nickname" required minlength="2" maxlength="24" placeholder="Ton pseudo" value="${esc(me?.username ?? "")}"></label><label>Code du salon<input class="code-input" name="code" autocomplete="off" spellcheck="false" required minlength="8" maxlength="9" placeholder="ABCD2345" value="${esc(code)}"></label><p class="error" id="login-error" role="alert"></p><button type="submit">Rejoindre la partie</button><p class="form-help">Le code est fourni par l’organisateur. Aucun compte Discord nécessaire.</p></form>`}${config.discordReady ? '<div class="login-divider"><span>ou</span></div><a class="button secondary discord-button" href="/platform-api/auth/login/discord">Continuer avec Discord</a>' : ""}</section>`;
+  for (const b of app.querySelectorAll("[data-login]"))
+    b.onclick = () => login(b.dataset.login);
+  const form = $(mode === "owner" ? "#owner-form" : "#code-form");
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    const submit = $("[type=submit]", form);
+    submit.disabled = true;
+    $("#login-error").textContent = "";
+    try {
+      const data = new FormData(form);
+      if (mode === "owner") {
+        await api("/auth/owner", { key: data.get("key") });
+        location.href = "/admin";
+      } else {
+        const result = await api("/auth/code", {
+          username: data.get("username"),
+          code: String(data.get("code")).replace(/[\s-]/g, "").toUpperCase(),
+        });
+        location.href = "/?gameID=" + encodeURIComponent(result.gameId);
+      }
+    } catch (error) {
+      $("#login-error").textContent = error.message;
+      submit.disabled = false;
+    }
+  };
 }
 function historyTable(rows) {
   return table(
@@ -180,13 +208,13 @@ async function profile() {
   app.innerHTML =
     hero(
       me.username,
-      "Ton activité et tes résultats dans la communauté.",
+      "Tes parties, tes résultats et tes salons.",
       "MON PROFIL",
     ) +
     `<div class="grid">${[
       ["Points", me.points],
       ["Victoires", me.wins],
-      ["Parties de tournoi", me.games],
+      ["Parties jouées", me.games],
     ]
       .map(
         ([name, value]) =>
@@ -194,7 +222,17 @@ async function profile() {
       )
       .join(
         "",
-      )}</div><div class="card"><h2>Compte Discord</h2><p>ID Discord : <code>${esc(me.discordId)}</code></p><p class="muted">Membre depuis le ${date(me.createdAt)}</p><button class="secondary" id="logout">Se déconnecter</button></div>`;
+      )}</div><div class="card profile-account"><div class="profile-initial">${esc(me.username.slice(0, 1).toUpperCase())}</div><div><h2>${esc(me.username)}</h2><span class="pill">${me.provider === "owner" ? "Organisateur" : me.provider === "guest" ? "Joueur · Accès par code" : "Compte Discord"}</span><p class="muted">Membre depuis le ${date(me.createdAt)}</p></div><button class="secondary small" id="logout">Se déconnecter</button></div>`;
+  if (["SUPER_ADMIN", "TOURNAMENT_ADMIN"].includes(me.role))
+    app.insertAdjacentHTML(
+      "beforeend",
+      '<a class="button" href="/admin">Gérer mes salons →</a>',
+    );
+  const rooms = await api("/me/rooms");
+  app.insertAdjacentHTML(
+    "beforeend",
+    `<section class="card"><h2>Mes salons</h2>${rooms.length ? rooms.map((r) => `<div class="row spread profile-room"><div><strong>${esc(r.name)}</strong> ${pill(r.status)}</div>${["lobby", "running", "paused"].includes(r.status) ? `<a class="button secondary small" href="/?gameID=${esc(r.game_id)}">Rejoindre</a>` : ""}</div>`).join("") : '<p class="muted">Rejoins ton premier salon avec le code de l’organisateur.</p><a class="button secondary small" href="/login">Entrer un code</a>'}</section>`,
+  );
   app.insertAdjacentHTML(
     "beforeend",
     `<div class="card"><h2>Historique des manches</h2>${historyTable(await api("/me/history"))}</div>`,
@@ -207,27 +245,25 @@ async function profile() {
 async function renderAdmin() {
   clearInterval(poll);
   if (!me || me.role === "PLAYER") {
-    app.innerHTML =
-      hero("Administration", "Connecte-toi avec un compte Discord autorisé.") +
-      (me
-        ? empty("Ce compte ne dispose pas d’un rôle administrateur.")
-        : '<a class="button" href="/login">Connexion Discord</a>');
+    login("owner");
     return;
   }
   app.innerHTML =
     hero(
-      "Le centre de la compétition.",
-      "Tournois, lobbies, joueurs et résultats : tout se pilote ici.",
+      "Administration",
+      "Crée un salon, partage son code et lance la partie quand tout le monde est prêt.",
       "ADMINISTRATION",
     ) +
     `<div class="tabs">${[
+      ["rooms", "Mes salons"],
       ["live", "Live"],
       ["tournaments", "Tournois"],
       ["matches", "Parties"],
       ["users", "Joueurs"],
       ["logs", "Journal"],
-      ["settings", "Discord & serveur"],
+      ["settings", "Réglages"],
     ]
+      .filter(([key]) => key !== "logs" || me.role === "SUPER_ADMIN")
       .map(
         ([key, label]) =>
           `<button data-tab="${key}" class="${key === currentTab ? "active" : ""}">${label}</button>`,
@@ -251,6 +287,11 @@ async function renderAdmin() {
   }
 }
 async function adminContent(content) {
+  if (currentTab === "rooms") {
+    const rooms = await api("/admin/rooms");
+    const manage = ["SUPER_ADMIN", "TOURNAMENT_ADMIN"].includes(me.role);
+    content.innerHTML = `<div class="row spread section-heading"><h2>Mes salons</h2>${manage ? button("+ Créer un salon", "room-create", false) : ""}</div>${rooms.length ? `<div class="grid rooms-grid">${rooms.map((r) => `<article class="card room-card"><div class="row spread"><h3>${esc(r.name)}</h3>${pill(r.status)}</div><p class="muted">${esc(r.config.gameMap)} · ${r.registered} / ${r.capacity} joueurs inscrits</p><div class="room-code"><span>Code à partager</span><strong>${esc(r.code)}</strong><div class="row">${button("Copier le code", `copy-code:${r.code}`)}${button("Copier le lien", `copy-link:${r.code}`)}</div></div><div class="row room-actions"><a class="button secondary small" href="/?gameID=${esc(r.game_id)}">Jouer</a>${["lobby", "running", "paused"].includes(r.status) ? button("Voir les joueurs", `room-players:${r.id}`) : ""}${manage && r.status === "lobby" ? button("Démarrer", `room-action:${r.id}:start`, false) : ""}${manage && r.status === "running" ? button("Pause", `room-action:${r.id}:pause`) : ""}${manage && r.status === "paused" ? button("Reprendre", `room-action:${r.id}:resume`, false) : ""}${manage && ["lobby", "running", "paused"].includes(r.status) ? button("Fermer", `room-action:${r.id}:cancel`) : ""}</div></article>`).join("")}</div>` : `<div class="empty"><h3>Ton premier salon</h3><p>Choisis une carte, crée le salon, puis donne le code aux joueurs.</p>${manage ? button("Créer un salon", "room-create", false) : ""}</div>`}`;
+  }
   if (currentTab === "live") {
     const data = await api("/admin/live");
     content.innerHTML = `<div class="grid">${[
@@ -338,10 +379,10 @@ async function adminContent(content) {
 async function loadUsers(target, q) {
   const users = await api("/admin/users?q=" + encodeURIComponent(q));
   target.innerHTML = table(
-    ["Joueur", "Discord", "Rôle", "Modération"],
+    ["Joueur", "Compte", "Rôle", "Modération"],
     users.map(
       (u) =>
-        `<tr><td>${esc(u.username)} ${button("Historique", `history:${u.public_id}`)}</td><td>${esc(u.discord_id)}</td><td>${esc(u.role)} ${me.role === "SUPER_ADMIN" ? button("Modifier", `role:${u.public_id}`) : ""}</td><td>${button(u.banned ? "Lever le ban" : "Bannir", `ban:${u.public_id}:${u.banned ? "false" : "true"}`)}</td></tr>`,
+        `<tr><td>${esc(u.username)} ${button("Historique", `history:${u.public_id}`)}</td><td>${u.auth_provider === "guest" ? "Invité · Code" : u.auth_provider === "owner" ? "Propriétaire" : esc(u.discord_id)}</td><td>${esc(u.role)} ${me.role === "SUPER_ADMIN" && u.auth_provider === "discord" ? button("Modifier", `role:${u.public_id}`) : ""}</td><td>${u.role !== "SUPER_ADMIN" ? button(u.banned ? "Lever le ban" : "Bannir", `ban:${u.public_id}:${u.banned ? "false" : "true"}`) : ""}</td></tr>`,
     ),
   );
   for (const b of target.querySelectorAll("[data-action]"))
@@ -350,6 +391,86 @@ async function loadUsers(target, q) {
 }
 async function doAction(action) {
   const [type, id, value] = action.split(":");
+  if (type === "copy-code" || type === "copy-link") {
+    const text =
+      type === "copy-code"
+        ? id
+        : location.origin + "/login?code=" + encodeURIComponent(id);
+    try {
+      await navigator.clipboard.writeText(text);
+      notice(type === "copy-code" ? "Code copié" : "Lien copié");
+    } catch {
+      notice(text);
+    }
+    return;
+  }
+  if (type === "room-create") {
+    dialog(
+      "Créer un salon",
+      '<label>Nom du salon<input name="name" required minlength="2" maxlength="80" placeholder="Partie de la communauté"></label><div class="fields"><label>Carte<select name="map"><option value="World">Monde</option><option value="Europe">Europe</option><option value="France">France</option></select></label><label>Places<input name="capacity" type="number" min="2" max="200" value="20" required></label><label>Tribus (bots)<input name="bots" type="number" min="0" max="400" value="100" required></label><label>Nations<select name="nations"><option value="default">Nations de la carte</option><option value="disabled">Désactivées</option></select></label></div><p class="form-help">Le salon reste privé. Les joueurs entrent ton code et tu démarres la partie quand ils sont prêts.</p>',
+      (data) =>
+        api("/admin/rooms", {
+          name: data.get("name"),
+          capacity: Number(data.get("capacity")),
+          map: data.get("map"),
+          bots: Number(data.get("bots")),
+          nations: data.get("nations"),
+        }),
+    );
+    return;
+  }
+  if (type === "room-action") {
+    if (value === "cancel") {
+      dialog(
+        "Fermer le salon",
+        "<p>Les joueurs seront déconnectés et ce code ne permettra plus de rejoindre.</p>",
+        () => api(`/admin/rooms/${id}/action`, { action: "cancel" }),
+      );
+      return;
+    }
+    await api(`/admin/rooms/${id}/action`, { action: value });
+    await renderAdmin();
+    notice(value === "start" ? "La partie démarre" : "Action effectuée");
+    return;
+  }
+  if (type === "room-players") {
+    const roster = await api(`/admin/rooms/${id}/players`);
+    const d = document.createElement("dialog");
+    const manage = ["SUPER_ADMIN", "TOURNAMENT_ADMIN"].includes(me.role);
+    d.innerHTML = `<div class="row spread"><h2>Joueurs du salon</h2><button class="secondary small" id="close">Fermer</button></div>${
+      roster.players.length
+        ? table(
+            ["Pseudo", "Statut", ""],
+            roster.players.map(
+              (p) =>
+                `<tr><td>${esc(p.username)}</td><td>${p.spectator ? "Spectateur" : "Joueur"}</td><td>${manage ? button("Exclure", `kick:${p.clientID}`) : ""}</td></tr>`,
+            ),
+          )
+        : empty(
+            "Les joueurs apparaîtront ici après avoir rejoint avec le code.",
+          )
+    }`;
+    document.body.append(d);
+    $("#close", d).onclick = () => d.close();
+    d.onclose = () => d.remove();
+    for (const b of d.querySelectorAll("[data-action]"))
+      b.onclick = async () => {
+        b.disabled = true;
+        try {
+          await api(`/admin/rooms/${id}/action`, {
+            action: "kick",
+            clientId: b.dataset.action.split(":")[1],
+          });
+          d.close();
+          notice("Joueur exclu");
+        } catch (error) {
+          notice(error.message);
+          b.disabled = false;
+        }
+      };
+    d.showModal();
+    return;
+  }
   if (type === "create") {
     dialog(
       "Nouveau tournoi",

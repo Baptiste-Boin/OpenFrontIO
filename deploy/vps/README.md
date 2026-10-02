@@ -44,7 +44,35 @@ main qui ne descend pas de la version active. Un SHA explicite permet un
 retour arrière. Les migrations présentes sont additives ; un futur changement
 SQL destructif doit avoir une procédure dédiée, pas être ajouté au démarrage.
 
-## Discord
+## Salons privés et accès propriétaire
+
+Les joueurs utilisent un pseudo et le code à huit caractères partagé par
+l’organisateur. Discord est facultatif pour ce parcours. Le propriétaire
+crée les salons dans `/admin`, copie leur code ou leur lien, consulte le roster,
+démarre la partie, met en pause/reprend et ferme le salon. Seuls les comptes
+administrateurs peuvent créer des salons. Un invité ne peut pas recevoir un
+rôle administrateur. Chaque ticket signé de joueur est lié à un seul game ID,
+y compris les reconnexions ; le code expire quand la partie est fermée ou terminée.
+
+Activer l’accès propriétaire avant le déploiement :
+
+```sh
+sudo bash deploy/vps/owner-access.sh
+```
+
+La clé aléatoire est créée une seule fois dans
+`/srv/openfront/owner-access.key` (root, 0600), sans affichage dans les logs.
+Le conteneur ne reçoit que son hash SHA-256 via `OWNER_ACCESS_HASH`.
+Le propriétaire récupère cette clé dans son terminal SSH et la saisit dans
+`/admin` → Connexion organisateur. Les sessions propriétaire expirent après
+12 heures. La clé ne doit pas être partagée avec les joueurs ni ajoutée à Git.
+Le script refuse de remplacer une clé déjà configurée.
+
+Les salons vivent dans la mémoire du moteur ; un redémarrage du moteur ferme
+leurs anciens codes. Les profils, historiques et résultats restent en SQL.
+Les tournois Discord et leurs listes de participants sont conservés.
+
+## Discord facultatif
 
 Modifier uniquement `/srv/openfront/.env` (root, 0600) :
 
