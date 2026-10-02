@@ -8,37 +8,38 @@ openfront.azertixyt.fr {
     Referrer-Policy same-origin
     Permissions-Policy "camera=(), microphone=(), geolocation=()"
   }
-  @private path /api/adminbot/* /w*/api/adminbot/* /platform-api/cluster/checkin /platform-api/join_verify /platform-api/custom_tribes
-  respond @private 404
-  handle /admin {
-    rewrite * /admin-page
-    reverse_proxy 127.0.0.1:3400
-  }
-  handle /tournaments {
-    rewrite * /tournaments-page
-    reverse_proxy 127.0.0.1:3400
-  }
-  handle /profile {
-    rewrite * /profile-page
-    reverse_proxy 127.0.0.1:3400
-  }
-  handle /login {
-    rewrite * /login-page
-    reverse_proxy 127.0.0.1:3400
-  }
-  handle_path /platform-api/* {
-    @result_write method POST
-    @archives path /game/*
-    route {
-      @archive_write {
-        method POST
-        path /game/*
-      }
-      respond @archive_write 404
+  # Preserve this order: private endpoints must be blocked before the proxy.
+  route {
+    @private path_regexp private ^/(api/adminbot(/|$)|w[0-9]+/api/adminbot(/|$)|platform-api/(cluster/checkin|join_verify|custom_tribes)(/|$))
+    respond @private 404
+    handle /admin {
+      rewrite * /admin-page
       reverse_proxy 127.0.0.1:3400
     }
-  }
-  handle {
-    reverse_proxy 127.0.0.1:3300
+    handle /tournaments {
+      rewrite * /tournaments-page
+      reverse_proxy 127.0.0.1:3400
+    }
+    handle /profile {
+      rewrite * /profile-page
+      reverse_proxy 127.0.0.1:3400
+    }
+    handle /login {
+      rewrite * /login-page
+      reverse_proxy 127.0.0.1:3400
+    }
+    handle_path /platform-api/* {
+      route {
+        @archive_write {
+          method POST
+          path /game/*
+        }
+        respond @archive_write 404
+        reverse_proxy 127.0.0.1:3400
+      }
+    }
+    handle {
+      reverse_proxy 127.0.0.1:3300
+    }
   }
 }
