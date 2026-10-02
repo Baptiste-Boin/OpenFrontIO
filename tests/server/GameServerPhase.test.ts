@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CloseCode, CloseReason } from "../../src/core/CloseCodes";
 import { createGameWireContext } from "../../src/core/ZbinWire";
+import { GameType } from "../../src/core/game/Game";
 import { GameManager } from "../../src/server/GameManager";
 import { GamePhase } from "../../src/server/GameServer";
 import {
@@ -30,6 +31,7 @@ describe("GameServer.phase()", () => {
   afterEach(() => {
     vi.clearAllTimers();
     vi.useRealTimers();
+    vi.unstubAllEnvs();
   });
 
   it("is Lobby until startsAt, then Active", () => {
@@ -52,6 +54,36 @@ describe("GameServer.phase()", () => {
     const game = makeGame({
       startsAt: T0 + 10_000,
       config: { maxPlayers: 1 },
+    });
+    game.joinClient(makeClient());
+    expect(game.phase()).toBe(GamePhase.Active);
+  });
+
+  it("keeps a full self-hosted private salon waiting for the organiser", () => {
+    vi.stubEnv("PLATFORM_AUTH", "discord");
+    const game = makeGame({
+      config: { maxPlayers: 1, gameType: GameType.Private },
+    });
+    game.joinClient(makeClient());
+    vi.advanceTimersByTime(10_000);
+    expect(game.phase()).toBe(GamePhase.Lobby);
+    game.handleIntent(
+      { type: "toggle_game_start_timer" },
+      {
+        clientID: cid("admin"),
+        isLobbyCreator: false,
+        isAdmin: true,
+        isAdminBot: true,
+      },
+    );
+    vi.advanceTimersByTime(1);
+    expect(game.phase()).toBe(GamePhase.Active);
+  });
+
+  it("keeps public capacity starts unchanged in self-hosted mode", () => {
+    vi.stubEnv("PLATFORM_AUTH", "discord");
+    const game = makeGame({
+      config: { maxPlayers: 1, gameType: GameType.Public },
     });
     game.joinClient(makeClient());
     expect(game.phase()).toBe(GamePhase.Active);
