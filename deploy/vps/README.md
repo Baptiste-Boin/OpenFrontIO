@@ -9,6 +9,9 @@ manches, résultats automatiques, classement, audit et bot Discord optionnel.
 - Projet Compose `openfront`, réseaux `openfront_edge`, `openfront_game`,
   `openfront_data`, volumes PostgreSQL et Redis propres à OpenFront.
 - Aucun réseau, compte SQL, volume ni secret Tralo partagé.
+- `CDN_BASE` reprend `APP_URL` : les cartes restent sur le VPS. Une base
+  absolue est nécessaire aux workers Blob du moteur, qui ne peuvent pas
+  résoudre les chemins relatifs depuis leur URL Blob.
 - Ports hôte uniquement `127.0.0.1:3300` (jeu) et `127.0.0.1:3400` (plateforme).
 - Le Caddy existant conserve les ports 80/443. Importer `openfront.caddy` après
   validation ; ne pas démarrer un deuxième Caddy.

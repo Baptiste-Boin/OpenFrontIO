@@ -30,7 +30,7 @@ services:
       ADMIN_BOT_API_KEY: ${ADMIN_BOT_API_KEY:?key required}
       TURNSTILE_SITE_KEY: self-hosted-discord
       LOBBY_COORDINATOR: "off"
-      CDN_BASE: ""
+      CDN_BASE: ${APP_URL:?public origin required}
     ports: ["127.0.0.1:3300:80"]
     networks: [edge, game]
     mem_limit: 900m
