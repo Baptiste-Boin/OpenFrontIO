@@ -235,6 +235,7 @@ app.get("/.well-known/jwks.json", (req, res) => res.json({ keys: [jwk] }));
 app.get("/config", (req, res) =>
   res.json({
     name: "AzertixYT OpenFront",
+    release: env.GIT_COMMIT,
     discordReady: oauthReady(),
     guildId: env.DISCORD_GUILD_ID ?? null,
   }),

@@ -383,6 +383,18 @@ describe("RenderHtml environment-only render", () => {
     expect(bootstrapConfig(html).instanceId).toBe("");
   });
 
+  it("renders a distinct Azertix title without upstream advertising scripts", async () => {
+    vi.stubEnv("PLATFORM_API_BASE", "/platform-api");
+    const html = await renderHtmlContent(REAL_TEMPLATE);
+    expect(html).toContain("<title>AzertixYT · OpenFront</title>");
+    expect(html).toContain(
+      'window.BOOTSTRAP_CONFIG.platformApiBase = "/platform-api";',
+    );
+    expect(html).not.toContain("www.googletagmanager.com");
+    expect(html).not.toContain("sdk.crazygames.com");
+    expect(html).not.toContain("challenges.cloudflare.com/turnstile");
+  });
+
   it("defaults to the full render when no options are passed", async () => {
     const config = bootstrapConfig(await renderHtmlContent(REAL_TEMPLATE));
 

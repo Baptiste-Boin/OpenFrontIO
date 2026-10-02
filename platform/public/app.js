@@ -485,6 +485,9 @@ try {
       throw e;
     }),
   ]);
+  if (/^[a-f0-9]{40}$/.test(config.release ?? ""))
+    $("#source-code").href =
+      `https://github.com/Baptiste-Boin/OpenFrontIO/tree/${config.release}`;
   if (me) {
     $("#account").textContent = me.username;
     $("#account").href = "/profile";

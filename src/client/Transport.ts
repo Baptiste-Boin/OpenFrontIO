@@ -703,7 +703,8 @@ export class Transport {
   async joinGame() {
     // Only the first join: the token is short-lived, and a later reconnect
     // must not present one that has since expired.
-    const token = this.lobbyConfig.creatorToken ?? (await getPlayToken());
+    const token =
+      this.lobbyConfig.creatorToken ?? (await getPlayToken(this.isLocal));
     delete this.lobbyConfig.creatorToken;
     this.sendMsg({
       type: "join",

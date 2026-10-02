@@ -764,7 +764,10 @@ export async function sendMagicLink(email: string): Promise<boolean> {
 }
 
 // WARNING: DO NOT EXPOSE THIS ID
-export async function getPlayToken(): Promise<string> {
+export async function getPlayToken(local = false): Promise<string> {
+  // This UUID is consumed only by LocalServer. Multiplayer still requires a signed Discord JWT.
+  if (local && window.BOOTSTRAP_CONFIG?.platformApiBase)
+    return getPersistentID();
   const result = await userAuth();
   if (result !== false) return result.jwt;
   if (window.BOOTSTRAP_CONFIG?.platformApiBase) {
