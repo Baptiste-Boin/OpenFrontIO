@@ -23,6 +23,7 @@ import { BaseModal } from "./components/BaseModal";
 import "./components/GameConfigSettings";
 import { MEDAL_ORDER, medalIcon } from "./components/map/Medals";
 import "./components/ToggleInputCard";
+import type { ToggleInputCard } from "./components/ToggleInputCard";
 import { modalHeader } from "./components/ui/ModalHeader";
 import { getPlayerCosmetics, prewarmCosmetics } from "./Cosmetics";
 import { crazyGamesSDK } from "./CrazyGamesSDK";
@@ -174,6 +175,10 @@ export class SinglePlayerModal extends BaseModal {
     if (window.BOOTSTRAP_CONFIG?.platformApiBase && !this.configurationOnly)
       return;
     super.open(args);
+  }
+
+  public override confirmBeforeClose(): boolean {
+    return !this.configurationOnly;
   }
 
   public openConfiguration(): void {
@@ -1121,6 +1126,23 @@ export class SinglePlayerModal extends BaseModal {
     // second join-lobby for a different gameID.
     if (this.starting || (this.configurationOnly && this.nationCountLoading))
       return;
+    // Numeric cards that commit on blur must also commit when the organizer
+    // validates directly. The editor must save the values currently displayed.
+    if (this.configurationOnly) {
+      for (const card of this.querySelectorAll<ToggleInputCard>(
+        "toggle-input-card",
+      )) {
+        if (!card.checked) continue;
+        const input = card.querySelector("input");
+        if (!input) continue;
+        if (!input.reportValidity()) {
+          input.focus();
+          return;
+        }
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
     // Validate and clamp maxTimer setting before starting
     let finalMaxTimerValue: number | undefined = undefined;
     if (this.maxTimer) {

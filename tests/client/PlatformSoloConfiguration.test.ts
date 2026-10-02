@@ -9,11 +9,21 @@ vi.mock("../../src/client/Cosmetics", () => ({
   getPlayerCosmetics: vi.fn(),
   prewarmCosmetics: vi.fn(),
 }));
+vi.mock("../../src/client/TerrainMapFileLoader", () => ({
+  terrainMapFileLoader: {
+    getMapData: vi.fn(() => ({
+      manifest: vi.fn(async () => ({
+        nations: Array.from({ length: 12 }, () => ({})),
+      })),
+    })),
+  },
+}));
 const original = window.BOOTSTRAP_CONFIG;
 afterEach(() => {
   window.BOOTSTRAP_CONFIG = original;
   document.body.innerHTML = "";
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 function platform() {
   window.BOOTSTRAP_CONFIG = {
@@ -63,9 +73,9 @@ describe("platform configuration and disabled solo", () => {
     internals.nations = 12;
     internals.defaultNationCount = 30;
     internals.startingGold = true;
-    internals.startingGoldValue = 0.5;
+    internals.startingGoldValue = 5;
     internals.goldMultiplier = true;
-    internals.goldMultiplierValue = 2.5;
+    internals.goldMultiplierValue = 2;
     internals.maxTimer = true;
     internals.maxTimerValue = 45;
     internals.instantBuild = true;
@@ -73,10 +83,41 @@ describe("platform configuration and disabled solo", () => {
     const joins = vi.fn();
     modal.addEventListener("game-config-selected", selected);
     modal.addEventListener("join-lobby", joins);
-    const container = document.createElement("div");
-    render(modal.render(), container);
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const container = modal;
+    modal.inline = true;
+    document.body.append(modal);
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    // Nation manifest initialization has settled before customization.
+    internals.nations = 12;
+    internals.defaultNationCount = 30;
+    await modal.updateComplete;
+    await (container.querySelector("game-config-settings") as any)
+      .updateComplete;
     expect(container.querySelector("game-config-settings")).not.toBeNull();
     expect(container.textContent).not.toContain("single_modal.not_logged");
+    // Editing the DOM without a blur reproduces the browser failure: the
+    // visible values must win over the card's previous default values.
+    await Promise.all(
+      Array.from(
+        container.querySelectorAll("toggle-input-card"),
+        (card: any) => card.updateComplete,
+      ),
+    );
+    (
+      container.querySelector("#starting-gold-value") as HTMLInputElement
+    ).value = "0.5";
+    (
+      container.querySelector("#gold-multiplier-value") as HTMLInputElement
+    ).value = "2.5";
+    expect(modal.confirmBeforeClose()).toBe(false);
     await internals.startGame();
     const config = (selected.mock.calls[0][0] as CustomEvent).detail;
     expect(GameConfigSchema.parse(config)).toMatchObject({
