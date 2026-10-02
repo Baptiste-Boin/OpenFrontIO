@@ -86,7 +86,13 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3400/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3400/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 20s
       timeout: 5s
       retries: 5
@@ -111,7 +117,16 @@ services:
     logging: *logging
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--maxmemory", "32mb", "--maxmemory-policy", "noeviction", "--appendonly", "yes"]
+    command:
+      [
+        "redis-server",
+        "--maxmemory",
+        "32mb",
+        "--maxmemory-policy",
+        "noeviction",
+        "--appendonly",
+        "yes",
+      ]
     restart: unless-stopped
     volumes: ["redis:/data"]
     networks: [data]

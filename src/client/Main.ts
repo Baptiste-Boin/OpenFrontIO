@@ -472,7 +472,9 @@ class Client {
     // so rendering the widget there just fails — and replays never
     // send a token anyway (see getTurnstileToken below).
     const turnstilePrefetch =
-      window.BOOTSTRAP_CONFIG?.platformApiBase || isDesktopShell() || isReplayShellHost(window.location.hostname)
+      window.BOOTSTRAP_CONFIG?.platformApiBase ||
+      isDesktopShell() ||
+      isReplayShellHost(window.location.hostname)
         ? null
         : getTurnstileToken();
     // A prefetch that fails is not an error anyone has asked about yet: the

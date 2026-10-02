@@ -4,7 +4,7 @@ umask 077
 root=/srv/openfront
 [[ $(id -u) == 0 ]] || exit 1
 export RELEASE_SHA=$(cat "$root/current-sha")
-exec 9>"$root/backup.lock"
+exec 9> "$root/backup.lock"
 flock -n 9 || exit 1
 mkdir -p "$root/backups"
 stamp=$(date -u +%Y%m%dT%H%M%SZ)

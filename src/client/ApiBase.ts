@@ -6,7 +6,10 @@ import { ClientEnv } from "./ClientEnv";
 
 export function getApiBase() {
   if (window.BOOTSTRAP_CONFIG?.platformApiBase) {
-    return new URL(window.BOOTSTRAP_CONFIG.platformApiBase, window.location.origin).href.replace(/\/$/, "");
+    return new URL(
+      window.BOOTSTRAP_CONFIG.platformApiBase,
+      window.location.origin,
+    ).href.replace(/\/$/, "");
   }
   const domainname = getAudience();
 

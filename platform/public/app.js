@@ -1,38 +1,470 @@
-const base='/platform-api';
-const app=document.querySelector('#app');
-const $=(selector,root=document)=>root.querySelector(selector);
-const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const date=value=>new Date(value).toLocaleString('fr-FR',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Paris'});
-const status={draft:'Brouillon',open:'Inscriptions ouvertes',closed:'Inscriptions fermées',running:'En cours',finished:'Terminé',lobby:'Lobby',paused:'En pause',cancelled:'Annulée'};
-let me=null,config=null,currentTab='live',poll;
-async function api(path,body){const response=await fetch(base+path,{method:body===undefined?'GET':'POST',credentials:'same-origin',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});if(!response.ok){const data=await response.json().catch(()=>({}));throw Object.assign(new Error(data.error||'Service indisponible'),{status:response.status});}return response.status===204?null:response.json();}
-function notice(text){const n=$('#notice');n.textContent=text;n.style.display='block';clearTimeout(n.timer);n.timer=setTimeout(()=>n.style.display='none',5500);}
-function button(label,action,secondary=true){return `<button class="${secondary?'secondary ':''}small" data-action="${esc(action)}">${esc(label)}</button>`;}
-const pill=s=>`<span class="pill status-${esc(s)}">${esc(status[s]||s)}</span>`;
-const hero=(title,description,eyebrow='AZERTIXYT · OPENFRONT')=>`<section class="hero"><span class="eyebrow">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p class="subtitle">${esc(description)}</p></section>`;
-const empty=text=>`<div class="empty">${esc(text)}</div>`;
-const table=(headers,rows)=>`<div class="table-wrap"><table><thead><tr>${headers.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
-function dialog(title,html,onSubmit){const d=document.createElement('dialog');d.innerHTML=`<form><div class="row spread"><h2>${esc(title)}</h2><button type="button" class="secondary small" id="close">Fermer</button></div>${html}<p class="error" id="form-error"></p><button type="submit">Enregistrer</button></form>`;document.body.append(d);$('#close',d).onclick=()=>d.close();d.addEventListener('close',()=>d.remove());$('form',d).onsubmit=async event=>{event.preventDefault();const submit=$('[type=submit]',d);submit.disabled=true;try{await onSubmit(new FormData(event.target));d.close();notice('Enregistré');await renderAdmin();}catch(error){$('#form-error',d).textContent=error.message;}finally{submit.disabled=false;}};d.showModal();}
-async function tournaments(){const [tournaments,leaders]=await Promise.all([api('/tournaments'),api('/leaderboard')]);app.innerHTML=hero('Le prochain territoire à conquérir.','Retrouve les tournois de la communauté, rejoins une compétition et suis les résultats de chaque manche.')+`<div class="row spread"><h2>Les tournois</h2><a class="button secondary small" href="/">Ouvrir le jeu →</a></div><div class="grid">${tournaments.map(t=>`<article class="card ${t.status==='open'?'feature':''}"><div class="row spread">${pill(t.status)}<span class="muted">${t.rounds} manche${t.rounds>1?'s':''}</span></div><h2 style="margin-top:20px">${esc(t.name)}</h2><p class="muted">${date(t.starts_at)}</p><div class="meta"><span>${t.registered} / ${t.capacity} inscrits</span><span>Victoire 10 pts</span></div><button data-tournament="${esc(t.id)}">Voir le tournoi →</button></article>`).join('')||empty('Le prochain tournoi sera annoncé ici.')}</div><h2>Classement de la communauté</h2>${leaders.length?table(['#','Joueur','Points','Victoires','Parties'],leaders.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.username)}</td><td>${p.points}</td><td>${p.wins}</td><td>${p.games}</td></tr>`)):empty('Le classement apparaîtra après les premières manches terminées.')}`;for(const b of app.querySelectorAll('[data-tournament]'))b.onclick=()=>{location.hash=b.dataset.tournament;showTournament(b.dataset.tournament).catch(error=>notice(error.message));};if(location.hash)await showTournament(location.hash.slice(1));}
-async function showTournament(id){const t=await api('/tournaments/'+encodeURIComponent(id));const d=document.createElement('dialog');d.innerHTML=`<div class="row spread"><h2>${esc(t.name)}</h2><button class="secondary small" id="close">Fermer</button></div>${pill(t.status)}<p>${date(t.starts_at)} · ${t.capacity} places · ${t.rounds} manches</p><p class="detail muted">${esc(t.rules)||'Victoire : 10 points. Participation à une manche terminée : 1 point. Les parties annulées ne rapportent aucun point.'}</p>${t.status==='open'?`<div class="row"><button id="register">M’inscrire avec Discord</button><button class="secondary" id="unregister">Me désinscrire</button></div>`:''}<h3 style="margin-top:25px">Manches</h3>${t.matches.map(m=>`<div class="row spread card">Manche ${m.round} ${pill(m.status)}<a class="button small secondary" href="/?gameID=${esc(m.game_id)}">Rejoindre</a></div>`).join('')||empty('Les lobbies seront créés au démarrage du tournoi.')}<h3 style="margin-top:20px">Participants & classement</h3>${table(['Joueur','Points','Victoires'],t.standings.map(p=>`<tr><td>${esc(p.username)}</td><td>${p.points}</td><td>${p.wins}</td></tr>`))}`;document.body.append(d);$('#close',d).onclick=()=>d.close();d.onclose=()=>{d.remove();history.replaceState(null,'',location.pathname);};for(const action of ['register','unregister']){const b=$('#'+action,d);if(b)b.onclick=async()=>{b.disabled=true;try{if(!me){location.href='/login';return;}await api(`/tournaments/${id}/${action}`,{});notice(action==='register'?'Inscription confirmée':'Inscription retirée');d.close();await tournaments();}catch(error){notice(error.message);}finally{b.disabled=false;}};}d.showModal();}
-function login(){app.innerHTML=`<section class="card login">${hero('Ta communauté. Ton terrain.','Connecte ton compte Discord pour participer aux tournois, suivre tes résultats et retrouver ton profil.','BIENVENUE')}<p class="muted">La participation est réservée aux membres du serveur Discord AzertixYT.</p>${config.discordReady?'<a class="button" href="/platform-api/auth/login/discord">Se connecter avec Discord →</a>':'<p class="pill">Connexion bientôt disponible</p><p class="muted">L’application Discord doit encore être configurée par l’administrateur.</p>'}<p><a class="muted" href="/">Continuer vers le jeu →</a></p></section>`;}
-async function profile(){if(!me){login();return;}app.innerHTML=hero(me.username,'Ton activité et tes résultats dans la communauté.','MON PROFIL')+`<div class="grid">${[['Points',me.points],['Victoires',me.wins],['Parties de tournoi',me.games]].map(([name,value])=>`<div class="card"><span class="muted">${name}</span><div class="metric">${value}</div></div>`).join('')}</div><div class="card"><h2>Compte Discord</h2><p>ID Discord : <code>${esc(me.discordId)}</code></p><p class="muted">Membre depuis le ${date(me.createdAt)}</p><button class="secondary" id="logout">Se déconnecter</button></div>`;$('#logout').onclick=async()=>{await api('/auth/logout',{});location.href='/login';};}
-async function renderAdmin(){clearInterval(poll);if(!me||me.role==='PLAYER'){app.innerHTML=hero('Administration','Connecte-toi avec un compte Discord autorisé.')+(me?empty('Ce compte ne dispose pas d’un rôle administrateur.'):'<a class="button" href="/login">Connexion Discord</a>');return;}app.innerHTML=hero('Le centre de la compétition.','Tournois, lobbies, joueurs et résultats : tout se pilote ici.','ADMINISTRATION')+`<div class="tabs">${[['live','Live'],['tournaments','Tournois'],['matches','Parties'],['users','Joueurs'],['logs','Journal'],['settings','Discord & serveur']].map(([key,label])=>`<button data-tab="${key}" class="${key===currentTab?'active':''}">${label}</button>`).join('')}</div><section id="content">Chargement…</section>`;for(const b of app.querySelectorAll('[data-tab]'))b.onclick=()=>{currentTab=b.dataset.tab;renderAdmin().catch(e=>notice(e.message));};const content=$('#content');try{await adminContent(content);if(currentTab==='live')poll=setInterval(()=>adminContent(content).catch(e=>notice(e.message)),15000);}catch(error){content.innerHTML=empty(error.message);}}
-async function adminContent(content){if(currentTab==='live'){const data=await api('/admin/live');content.innerHTML=`<div class="grid">${[['Comptes',data.users],['Sessions actives',data.sessions],['Manches actives',data.active_matches],['Latence du jeu',data.latencyMs+' ms']].map(([name,value])=>`<div class="card"><span class="muted">${name}</span><div class="metric">${value}</div></div>`).join('')}</div><div class="card"><div class="row spread"><h2>État de la plateforme</h2><span class="pill">Jeu disponible</span></div><p>API : ${Math.round(data.memoryBytes/1024/1024)} Mo de mémoire · en ligne depuis ${Math.floor(data.uptimeSeconds/60)} min</p><p class="muted">Discord : ${data.discord?'configuré':'en attente'} · Bot : ${data.bot?'configuré':'en attente'}</p><p class="muted">Version <code>${esc((data.release||'').slice(0,12))}</code></p></div>`;return;}
-if(currentTab==='tournaments'){const data=await api('/tournaments');content.innerHTML=`<div class="row spread"><h2>Tournois</h2>${button('Créer un tournoi','create')}</div>${data.map(t=>`<div class="card"><div class="row spread"><h3>${esc(t.name)}</h3>${pill(t.status)}</div><p class="muted">${date(t.starts_at)} · ${t.registered}/${t.capacity} joueurs · ${t.rounds} manches</p><div class="row">${({draft:[['Ouvrir les inscriptions','open']],open:[['Fermer les inscriptions','closed']],closed:[['Rouvrir','open'],['Démarrer le tournoi','running']],running:[['Terminer le tournoi','finished']],finished:[]}[t.status]||[]).map(([label,s])=>button(label,`status:${t.id}:${s}`)).join('')}${t.status==='running'?button('Créer la prochaine manche',`match:${t.id}`):''}</div></div>`).join('')||empty('Aucun tournoi pour le moment.')}`;}
-if(currentTab==='matches'){const data=await api('/admin/matches');content.innerHTML=`<h2>Parties de tournoi</h2>${data.map(m=>`<div class="card"><div class="row spread"><h3>${esc(m.name)} · Manche ${m.round}</h3>${pill(m.status)}</div><p class="muted">Code <code>${esc(m.game_id)}</code></p><div class="row"><a class="button small secondary" href="/?gameID=${esc(m.game_id)}">Ouvrir le lobby</a>${button('Joueurs',`roster:${m.id}`)}${m.status==='lobby'?button('Démarrer',`action:${m.id}:start`):''}${m.status==='running'?button('Mettre en pause',`action:${m.id}:pause`):''}${m.status==='paused'?button('Reprendre',`action:${m.id}:resume`):''}${!['finished','cancelled'].includes(m.status)?button('Annuler',`action:${m.id}:cancel`):''}</div></div>`).join('')||empty('Crée une manche depuis un tournoi en cours.')}`;}
-if(currentTab==='users'){content.innerHTML='<h2>Joueurs</h2><label>Rechercher par pseudo ou ID Discord<input id="search" placeholder="Rechercher…"></label><div id="users"></div>';let timer;$('#search',content).oninput=()=>{clearTimeout(timer);timer=setTimeout(()=>loadUsers($('#users',content),$('#search',content).value).catch(e=>notice(e.message)),300);};await loadUsers($('#users',content),'');}
-if(currentTab==='logs'){const data=await api('/admin/logs');content.innerHTML=`<h2>Journal d’administration</h2>${table(['Date','Compte','Action','Cible'],data.map(l=>`<tr><td>${date(l.created_at)}</td><td>${esc(l.username||'Serveur de jeu')}</td><td>${esc(l.action)}</td><td><code>${esc(l.target)}</code></td></tr>`))}`;}
-if(currentTab==='settings'){content.innerHTML=`<div class="card"><h2>Discord</h2><p>${config.discordReady?'La connexion Discord est configurée.':'La connexion attend les identifiants de l’application Discord.'}</p><p class="muted">Serveur : <code>${esc(config.guildId||'À configurer')}</code></p><p class="muted">Les membres du serveur sont vérifiés lors des inscriptions et du renouvellement des sessions de jeu.</p></div><div class="card"><h2>Hébergement</h2><p>La plateforme et le serveur de jeu tournent sur le VPS. Le dépôt GitHub fournit les versions déployées.</p><p class="muted">Les résultats sont reçus automatiquement. Une victoire rapporte 10 points ; une participation à une manche terminée rapporte 1 point.</p></div>`;}
-for(const b of content.querySelectorAll('[data-action]'))b.onclick=()=>doAction(b.dataset.action).catch(e=>notice(e.message));}
-async function loadUsers(target,q){const users=await api('/admin/users?q='+encodeURIComponent(q));target.innerHTML=table(['Joueur','Discord','Rôle','Modération'],users.map(u=>`<tr><td>${esc(u.username)}</td><td>${esc(u.discord_id)}</td><td>${esc(u.role)} ${me.role==='SUPER_ADMIN'?button('Modifier',`role:${u.public_id}`):''}</td><td>${button(u.banned?'Lever le ban':'Bannir',`ban:${u.public_id}:${u.banned?'false':'true'}`)}</td></tr>`));for(const b of target.querySelectorAll('[data-action]'))b.onclick=()=>doAction(b.dataset.action).catch(e=>notice(e.message));}
-async function doAction(action){const [type,id,value]=action.split(':');if(type==='create'){dialog('Nouveau tournoi',`<label>Nom<input name="name" required minlength="3" maxlength="120"></label><div class="fields"><label>Date et heure de Paris<input name="startsAt" type="datetime-local" required></label><label>Places<input name="capacity" type="number" min="2" max="200" value="32" required></label><label>Manches<input name="rounds" type="number" min="1" max="20" value="3" required></label><label>Carte<select name="map"><option value="World">Monde</option><option value="Europe">Europe</option><option value="France">France</option></select></label></div><label>Règles<textarea name="rules" maxlength="5000"></textarea></label>`,async data=>{const local=data.get('startsAt');const startsAt=parisToISO(local);await api('/admin/tournaments',{name:data.get('name'),startsAt,capacity:Number(data.get('capacity')),rounds:Number(data.get('rounds')),rules:data.get('rules'),gameConfig:{gameMap:data.get('map'),gameMode:'Free For All',bots:0,nations:'disabled'}});});return;}
-if(type==='status')await api(`/admin/tournaments/${id}/status`,{status:value});
-if(type==='match')await api(`/admin/tournaments/${id}/matches`,{});
-if(type==='action'){if(value==='cancel'){dialog('Annuler la partie','<p>Cette manche sera fermée sans attribuer de points.</p>',()=>api(`/admin/matches/${id}/action`,{action:value}));return;}await api(`/admin/matches/${id}/action`,{action:value});}
-if(type==='roster'){const data=await api(`/admin/matches/${id}/roster`);dialog('Joueurs du lobby',`<div id="roster">${(data.players||[]).map(p=>`<p>${esc(p.username||p.clientID)} <button type="button" class="small secondary" data-kick="${esc(p.clientID)}">Exclure</button></p>`).join('')||empty('Aucun joueur connecté.')}</div>`,async()=>{});for(const b of document.querySelectorAll('[data-kick]'))b.onclick=async()=>{try{await api(`/admin/matches/${id}/action`,{action:'kick',clientId:b.dataset.kick});b.closest('p').remove();notice('Joueur exclu');}catch(e){notice(e.message);}};return;}
-if(type==='ban'){dialog(value==='true'?'Bannir un joueur':'Lever le ban','<label>Motif<textarea name="reason" maxlength="500"></textarea></label><label>Durée<select name="hours"><option value="24">24 heures</option><option value="168">7 jours</option><option value="0">Permanent</option></select></label>',async data=>api(`/admin/users/${id}/ban`,{banned:value==='true',reason:data.get('reason'),until:Number(data.get('hours'))?new Date(Date.now()+Number(data.get('hours'))*3600000).toISOString():null}));return;}
-if(type==='role'){dialog('Rôle du joueur','<label>Rôle<select name="role"><option>PLAYER</option><option>MODERATOR</option><option>TOURNAMENT_ADMIN</option><option>SUPER_ADMIN</option></select></label>',async data=>api(`/admin/users/${id}/role`,{role:data.get('role')}));return;}
-notice('Action effectuée');await renderAdmin();}
-function parisToISO(local){const parts=local.split(/[-T:]/).map(Number);const target=Date.UTC(parts[0],parts[1]-1,parts[2],parts[3],parts[4]);let result=target;for(let i=0;i<3;i++){const represented=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(result));const p=represented.split(/[- :]/).map(Number);const shown=Date.UTC(p[0],p[1]-1,p[2],p[3],p[4],p[5]);result+=target-shown;}return new Date(result).toISOString();}
-try{[config,me]=await Promise.all([api('/config'),api('/me').catch(e=>{if(e.status===401||e.status===403)return null;throw e;})]);if(me){$('#account').textContent=me.username;$('#account').href='/profile';}for(const a of document.querySelectorAll('nav a'))if(a.pathname===location.pathname)a.classList.add('active');if(location.pathname.startsWith('/admin'))await renderAdmin();else if(location.pathname.startsWith('/profile'))await profile();else if(location.pathname.startsWith('/login'))login();else await tournaments();}catch(error){app.innerHTML=hero('La plateforme est indisponible.',error.message)+'<button id="retry">Réessayer</button>';$('#retry').onclick=()=>location.reload();}
+const nonEmpty = (value, fallback) => (value.length > 0 ? value : fallback);
+const base = "/platform-api";
+const app = document.querySelector("#app");
+const $ = (selector, root = document) => root.querySelector(selector);
+const esc = (value) =>
+  String(value ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ],
+  );
+const date = (value) =>
+  new Date(value).toLocaleString("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Europe/Paris",
+  });
+const status = {
+  draft: "Brouillon",
+  open: "Inscriptions ouvertes",
+  closed: "Inscriptions fermées",
+  running: "En cours",
+  finished: "Terminé",
+  lobby: "Lobby",
+  paused: "En pause",
+  cancelled: "Annulée",
+};
+let me = null,
+  config = null,
+  currentTab = "live",
+  poll;
+async function api(path, body) {
+  const response = await fetch(base + path, {
+    method: body === undefined ? "GET" : "POST",
+    credentials: "same-origin",
+    headers: body === undefined ? {} : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw Object.assign(new Error(data.error ?? "Service indisponible"), {
+      status: response.status,
+    });
+  }
+  return response.status === 204 ? null : response.json();
+}
+function notice(text) {
+  const n = $("#notice");
+  n.textContent = text;
+  n.style.display = "block";
+  clearTimeout(n.timer);
+  n.timer = setTimeout(() => (n.style.display = "none"), 5500);
+}
+function button(label, action, secondary = true) {
+  return `<button class="${secondary ? "secondary " : ""}small" data-action="${esc(action)}">${esc(label)}</button>`;
+}
+const pill = (s) =>
+  `<span class="pill status-${esc(s)}">${esc(status[s] ?? s)}</span>`;
+const hero = (title, description, eyebrow = "AZERTIXYT · OPENFRONT") =>
+  `<section class="hero"><span class="eyebrow">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p class="subtitle">${esc(description)}</p></section>`;
+const empty = (text) => `<div class="empty">${esc(text)}</div>`;
+const table = (headers, rows) =>
+  `<div class="table-wrap"><table><thead><tr>${headers.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+function dialog(title, html, onSubmit) {
+  const d = document.createElement("dialog");
+  d.innerHTML = `<form><div class="row spread"><h2>${esc(title)}</h2><button type="button" class="secondary small" id="close">Fermer</button></div>${html}<p class="error" id="form-error"></p><button type="submit">Enregistrer</button></form>`;
+  document.body.append(d);
+  $("#close", d).onclick = () => d.close();
+  d.addEventListener("close", () => d.remove());
+  $("form", d).onsubmit = async (event) => {
+    event.preventDefault();
+    const submit = $("[type=submit]", d);
+    submit.disabled = true;
+    try {
+      await onSubmit(new FormData(event.target));
+      d.close();
+      notice("Enregistré");
+      await renderAdmin();
+    } catch (error) {
+      $("#form-error", d).textContent = error.message;
+    } finally {
+      submit.disabled = false;
+    }
+  };
+  d.showModal();
+}
+async function tournaments() {
+  const [tournaments, leaders] = await Promise.all([
+    api("/tournaments"),
+    api("/leaderboard"),
+  ]);
+  app.innerHTML =
+    hero(
+      "Le prochain territoire à conquérir.",
+      "Retrouve les tournois de la communauté, rejoins une compétition et suis les résultats de chaque manche.",
+    ) +
+    `<div class="row spread"><h2>Les tournois</h2><a class="button secondary small" href="/">Ouvrir le jeu →</a></div><div class="grid">${nonEmpty(tournaments.map((t) => `<article class="card ${t.status === "open" ? "feature" : ""}"><div class="row spread">${pill(t.status)}<span class="muted">${t.rounds} manche${t.rounds > 1 ? "s" : ""}</span></div><h2 style="margin-top:20px">${esc(t.name)}</h2><p class="muted">${date(t.starts_at)}</p><div class="meta"><span>${t.registered} / ${t.capacity} inscrits</span><span>Victoire 10 pts</span></div><button data-tournament="${esc(t.id)}">Voir le tournoi →</button></article>`).join(""), empty("Le prochain tournoi sera annoncé ici."))}</div><h2>Classement de la communauté</h2>${
+      leaders.length
+        ? table(
+            ["#", "Joueur", "Points", "Victoires", "Parties"],
+            leaders.map(
+              (p, i) =>
+                `<tr><td>${i + 1}</td><td>${esc(p.username)}</td><td>${p.points}</td><td>${p.wins}</td><td>${p.games}</td></tr>`,
+            ),
+          )
+        : empty(
+            "Le classement apparaîtra après les premières manches terminées.",
+          )
+    }`;
+  for (const b of app.querySelectorAll("[data-tournament]"))
+    b.onclick = () => {
+      location.hash = b.dataset.tournament;
+      showTournament(b.dataset.tournament).catch((error) =>
+        notice(error.message),
+      );
+    };
+  if (location.hash) await showTournament(location.hash.slice(1));
+}
+async function showTournament(id) {
+  const t = await api("/tournaments/" + encodeURIComponent(id));
+  const d = document.createElement("dialog");
+  d.innerHTML = `<div class="row spread"><h2>${esc(t.name)}</h2><button class="secondary small" id="close">Fermer</button></div>${pill(t.status)}<p>${date(t.starts_at)} · ${t.capacity} places · ${t.rounds} manches</p><p class="detail muted">${esc(t.rules) || "Victoire : 10 points. Participation à une manche terminée : 1 point. Les parties annulées ne rapportent aucun point."}</p>${t.status === "open" ? `<div class="row"><button id="register">M’inscrire avec Discord</button><button class="secondary" id="unregister">Me désinscrire</button></div>` : ""}<h3 style="margin-top:25px">Manches</h3>${nonEmpty(t.matches.map((m) => `<div class="row spread card">Manche ${m.round} ${pill(m.status)}<a class="button small secondary" href="/?gameID=${esc(m.game_id)}">Rejoindre</a></div>`).join(""), empty("Les lobbies seront créés au démarrage du tournoi."))}<h3 style="margin-top:20px">Participants & classement</h3>${table(
+    ["Joueur", "Points", "Victoires"],
+    t.standings.map(
+      (p) =>
+        `<tr><td>${esc(p.username)}</td><td>${p.points}</td><td>${p.wins}</td></tr>`,
+    ),
+  )}`;
+  document.body.append(d);
+  $("#close", d).onclick = () => d.close();
+  d.onclose = () => {
+    d.remove();
+    history.replaceState(null, "", location.pathname);
+  };
+  for (const action of ["register", "unregister"]) {
+    const b = $("#" + action, d);
+    if (b)
+      b.onclick = async () => {
+        b.disabled = true;
+        try {
+          if (!me) {
+            location.href = "/login";
+            return;
+          }
+          await api(`/tournaments/${id}/${action}`, {});
+          notice(
+            action === "register"
+              ? "Inscription confirmée"
+              : "Inscription retirée",
+          );
+          d.close();
+          await tournaments();
+        } catch (error) {
+          notice(error.message);
+        } finally {
+          b.disabled = false;
+        }
+      };
+  }
+  d.showModal();
+}
+function login() {
+  app.innerHTML = `<section class="card login">${hero("Ta communauté. Ton terrain.", "Connecte ton compte Discord pour participer aux tournois, suivre tes résultats et retrouver ton profil.", "BIENVENUE")}<p class="muted">La participation est réservée aux membres du serveur Discord AzertixYT.</p>${config.discordReady ? '<a class="button" href="/platform-api/auth/login/discord">Se connecter avec Discord →</a>' : '<p class="pill">Connexion bientôt disponible</p><p class="muted">L’application Discord doit encore être configurée par l’administrateur.</p>'}<p><a class="muted" href="/">Continuer vers le jeu →</a></p></section>`;
+}
+async function profile() {
+  if (!me) {
+    login();
+    return;
+  }
+  app.innerHTML =
+    hero(
+      me.username,
+      "Ton activité et tes résultats dans la communauté.",
+      "MON PROFIL",
+    ) +
+    `<div class="grid">${[
+      ["Points", me.points],
+      ["Victoires", me.wins],
+      ["Parties de tournoi", me.games],
+    ]
+      .map(
+        ([name, value]) =>
+          `<div class="card"><span class="muted">${name}</span><div class="metric">${value}</div></div>`,
+      )
+      .join(
+        "",
+      )}</div><div class="card"><h2>Compte Discord</h2><p>ID Discord : <code>${esc(me.discordId)}</code></p><p class="muted">Membre depuis le ${date(me.createdAt)}</p><button class="secondary" id="logout">Se déconnecter</button></div>`;
+  $("#logout").onclick = async () => {
+    await api("/auth/logout", {});
+    location.href = "/login";
+  };
+}
+async function renderAdmin() {
+  clearInterval(poll);
+  if (!me || me.role === "PLAYER") {
+    app.innerHTML =
+      hero("Administration", "Connecte-toi avec un compte Discord autorisé.") +
+      (me
+        ? empty("Ce compte ne dispose pas d’un rôle administrateur.")
+        : '<a class="button" href="/login">Connexion Discord</a>');
+    return;
+  }
+  app.innerHTML =
+    hero(
+      "Le centre de la compétition.",
+      "Tournois, lobbies, joueurs et résultats : tout se pilote ici.",
+      "ADMINISTRATION",
+    ) +
+    `<div class="tabs">${[
+      ["live", "Live"],
+      ["tournaments", "Tournois"],
+      ["matches", "Parties"],
+      ["users", "Joueurs"],
+      ["logs", "Journal"],
+      ["settings", "Discord & serveur"],
+    ]
+      .map(
+        ([key, label]) =>
+          `<button data-tab="${key}" class="${key === currentTab ? "active" : ""}">${label}</button>`,
+      )
+      .join("")}</div><section id="content">Chargement…</section>`;
+  for (const b of app.querySelectorAll("[data-tab]"))
+    b.onclick = () => {
+      currentTab = b.dataset.tab;
+      renderAdmin().catch((e) => notice(e.message));
+    };
+  const content = $("#content");
+  try {
+    await adminContent(content);
+    if (currentTab === "live")
+      poll = setInterval(
+        () => adminContent(content).catch((e) => notice(e.message)),
+        15000,
+      );
+  } catch (error) {
+    content.innerHTML = empty(error.message);
+  }
+}
+async function adminContent(content) {
+  if (currentTab === "live") {
+    const data = await api("/admin/live");
+    content.innerHTML = `<div class="grid">${[
+      ["Comptes", data.users],
+      ["Sessions actives", data.sessions],
+      ["Manches actives", data.active_matches],
+      ["Latence du jeu", data.latencyMs + " ms"],
+    ]
+      .map(
+        ([name, value]) =>
+          `<div class="card"><span class="muted">${name}</span><div class="metric">${value}</div></div>`,
+      )
+      .join(
+        "",
+      )}</div><div class="card"><div class="row spread"><h2>État de la plateforme</h2><span class="pill">Jeu disponible</span></div><p>API : ${Math.round(data.memoryBytes / 1024 / 1024)} Mo de mémoire · en ligne depuis ${Math.floor(data.uptimeSeconds / 60)} min</p><p class="muted">Discord : ${data.discord ? "configuré" : "en attente"} · Bot : ${data.bot ? "configuré" : "en attente"}</p><p class="muted">Version <code>${esc((data.release ?? "").slice(0, 12))}</code></p></div>`;
+    return;
+  }
+  if (currentTab === "tournaments") {
+    const data = await api("/tournaments");
+    content.innerHTML = `<div class="row spread"><h2>Tournois</h2>${button("Créer un tournoi", "create")}</div>${nonEmpty(
+      data
+        .map(
+          (t) =>
+            `<div class="card"><div class="row spread"><h3>${esc(t.name)}</h3>${pill(t.status)}</div><p class="muted">${date(t.starts_at)} · ${t.registered}/${t.capacity} joueurs · ${t.rounds} manches</p><div class="row">${(
+              {
+                draft: [["Ouvrir les inscriptions", "open"]],
+                open: [["Fermer les inscriptions", "closed"]],
+                closed: [
+                  ["Rouvrir", "open"],
+                  ["Démarrer le tournoi", "running"],
+                ],
+                running: [["Terminer le tournoi", "finished"]],
+                finished: [],
+              }[t.status] ?? []
+            )
+              .map(([label, s]) => button(label, `status:${t.id}:${s}`))
+              .join(
+                "",
+              )}${t.status === "running" ? button("Créer la prochaine manche", `match:${t.id}`) : ""}</div></div>`,
+        )
+        .join(""),
+      empty("Aucun tournoi pour le moment."),
+    )}`;
+  }
+  if (currentTab === "matches") {
+    const data = await api("/admin/matches");
+    content.innerHTML = `<h2>Parties de tournoi</h2>${nonEmpty(data.map((m) => `<div class="card"><div class="row spread"><h3>${esc(m.name)} · Manche ${m.round}</h3>${pill(m.status)}</div><p class="muted">Code <code>${esc(m.game_id)}</code></p><div class="row"><a class="button small secondary" href="/?gameID=${esc(m.game_id)}">Ouvrir le lobby</a>${button("Joueurs", `roster:${m.id}`)}${m.status === "lobby" ? button("Démarrer", `action:${m.id}:start`) : ""}${m.status === "running" ? button("Mettre en pause", `action:${m.id}:pause`) : ""}${m.status === "paused" ? button("Reprendre", `action:${m.id}:resume`) : ""}${!["finished", "cancelled"].includes(m.status) ? button("Annuler", `action:${m.id}:cancel`) : ""}</div></div>`).join(""), empty("Crée une manche depuis un tournoi en cours."))}`;
+  }
+  if (currentTab === "users") {
+    content.innerHTML =
+      '<h2>Joueurs</h2><label>Rechercher par pseudo ou ID Discord<input id="search" placeholder="Rechercher…"></label><div id="users"></div>';
+    let timer;
+    $("#search", content).oninput = () => {
+      clearTimeout(timer);
+      timer = setTimeout(
+        () =>
+          loadUsers($("#users", content), $("#search", content).value).catch(
+            (e) => notice(e.message),
+          ),
+        300,
+      );
+    };
+    await loadUsers($("#users", content), "");
+  }
+  if (currentTab === "logs") {
+    const data = await api("/admin/logs");
+    content.innerHTML = `<h2>Journal d’administration</h2>${table(
+      ["Date", "Compte", "Action", "Cible"],
+      data.map(
+        (l) =>
+          `<tr><td>${date(l.created_at)}</td><td>${esc(l.username ?? "Serveur de jeu")}</td><td>${esc(l.action)}</td><td><code>${esc(l.target)}</code></td></tr>`,
+      ),
+    )}`;
+  }
+  if (currentTab === "settings") {
+    content.innerHTML = `<div class="card"><h2>Discord</h2><p>${config.discordReady ? "La connexion Discord est configurée." : "La connexion attend les identifiants de l’application Discord."}</p><p class="muted">Serveur : <code>${esc(config.guildId ?? "À configurer")}</code></p><p class="muted">Les membres du serveur sont vérifiés lors des inscriptions et du renouvellement des sessions de jeu.</p></div><div class="card"><h2>Hébergement</h2><p>La plateforme et le serveur de jeu tournent sur le VPS. Le dépôt GitHub fournit les versions déployées.</p><p class="muted">Les résultats sont reçus automatiquement. Une victoire rapporte 10 points ; une participation à une manche terminée rapporte 1 point.</p></div>`;
+  }
+  for (const b of content.querySelectorAll("[data-action]"))
+    b.onclick = () =>
+      doAction(b.dataset.action).catch((e) => notice(e.message));
+}
+async function loadUsers(target, q) {
+  const users = await api("/admin/users?q=" + encodeURIComponent(q));
+  target.innerHTML = table(
+    ["Joueur", "Discord", "Rôle", "Modération"],
+    users.map(
+      (u) =>
+        `<tr><td>${esc(u.username)}</td><td>${esc(u.discord_id)}</td><td>${esc(u.role)} ${me.role === "SUPER_ADMIN" ? button("Modifier", `role:${u.public_id}`) : ""}</td><td>${button(u.banned ? "Lever le ban" : "Bannir", `ban:${u.public_id}:${u.banned ? "false" : "true"}`)}</td></tr>`,
+    ),
+  );
+  for (const b of target.querySelectorAll("[data-action]"))
+    b.onclick = () =>
+      doAction(b.dataset.action).catch((e) => notice(e.message));
+}
+async function doAction(action) {
+  const [type, id, value] = action.split(":");
+  if (type === "create") {
+    dialog(
+      "Nouveau tournoi",
+      `<label>Nom<input name="name" required minlength="3" maxlength="120"></label><div class="fields"><label>Date et heure de Paris<input name="startsAt" type="datetime-local" required></label><label>Places<input name="capacity" type="number" min="2" max="200" value="32" required></label><label>Manches<input name="rounds" type="number" min="1" max="20" value="3" required></label><label>Carte<select name="map"><option value="World">Monde</option><option value="Europe">Europe</option><option value="France">France</option></select></label></div><label>Règles<textarea name="rules" maxlength="5000"></textarea></label>`,
+      async (data) => {
+        const local = data.get("startsAt");
+        const startsAt = parisToISO(local);
+        await api("/admin/tournaments", {
+          name: data.get("name"),
+          startsAt,
+          capacity: Number(data.get("capacity")),
+          rounds: Number(data.get("rounds")),
+          rules: data.get("rules"),
+          gameConfig: {
+            gameMap: data.get("map"),
+            gameMode: "Free For All",
+            bots: 0,
+            nations: "disabled",
+          },
+        });
+      },
+    );
+    return;
+  }
+  if (type === "status")
+    await api(`/admin/tournaments/${id}/status`, { status: value });
+  if (type === "match") await api(`/admin/tournaments/${id}/matches`, {});
+  if (type === "action") {
+    if (value === "cancel") {
+      dialog(
+        "Annuler la partie",
+        "<p>Cette manche sera fermée sans attribuer de points.</p>",
+        () => api(`/admin/matches/${id}/action`, { action: value }),
+      );
+      return;
+    }
+    await api(`/admin/matches/${id}/action`, { action: value });
+  }
+  if (type === "roster") {
+    const data = await api(`/admin/matches/${id}/roster`);
+    dialog(
+      "Joueurs du lobby",
+      `<div id="roster">${nonEmpty((data.players ?? []).map((p) => `<p>${esc(p.username ?? p.clientID)} <button type="button" class="small secondary" data-kick="${esc(p.clientID)}">Exclure</button></p>`).join(""), empty("Aucun joueur connecté."))}</div>`,
+      async () => {},
+    );
+    for (const b of document.querySelectorAll("[data-kick]"))
+      b.onclick = async () => {
+        try {
+          await api(`/admin/matches/${id}/action`, {
+            action: "kick",
+            clientId: b.dataset.kick,
+          });
+          b.closest("p").remove();
+          notice("Joueur exclu");
+        } catch (e) {
+          notice(e.message);
+        }
+      };
+    return;
+  }
+  if (type === "ban") {
+    dialog(
+      value === "true" ? "Bannir un joueur" : "Lever le ban",
+      '<label>Motif<textarea name="reason" maxlength="500"></textarea></label><label>Durée<select name="hours"><option value="24">24 heures</option><option value="168">7 jours</option><option value="0">Permanent</option></select></label>',
+      async (data) =>
+        api(`/admin/users/${id}/ban`, {
+          banned: value === "true",
+          reason: data.get("reason"),
+          until: Number(data.get("hours"))
+            ? new Date(
+                Date.now() + Number(data.get("hours")) * 3600000,
+              ).toISOString()
+            : null,
+        }),
+    );
+    return;
+  }
+  if (type === "role") {
+    dialog(
+      "Rôle du joueur",
+      '<label>Rôle<select name="role"><option>PLAYER</option><option>MODERATOR</option><option>TOURNAMENT_ADMIN</option><option>SUPER_ADMIN</option></select></label>',
+      async (data) =>
+        api(`/admin/users/${id}/role`, { role: data.get("role") }),
+    );
+    return;
+  }
+  notice("Action effectuée");
+  await renderAdmin();
+}
+function parisToISO(local) {
+  const parts = local.split(/[-T:]/).map(Number);
+  const target = Date.UTC(parts[0], parts[1] - 1, parts[2], parts[3], parts[4]);
+  let result = target;
+  for (let i = 0; i < 3; i++) {
+    const represented = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Europe/Paris",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    }).format(new Date(result));
+    const p = represented.split(/[- :]/).map(Number);
+    const shown = Date.UTC(p[0], p[1] - 1, p[2], p[3], p[4], p[5]);
+    result += target - shown;
+  }
+  return new Date(result).toISOString();
+}
+try {
+  [config, me] = await Promise.all([
+    api("/config"),
+    api("/me").catch((e) => {
+      if (e.status === 401 || e.status === 403) return null;
+      throw e;
+    }),
+  ]);
+  if (me) {
+    $("#account").textContent = me.username;
+    $("#account").href = "/profile";
+  }
+  for (const a of document.querySelectorAll("nav a"))
+    if (a.pathname === location.pathname) a.classList.add("active");
+  if (location.pathname.startsWith("/admin")) await renderAdmin();
+  else if (location.pathname.startsWith("/profile")) await profile();
+  else if (location.pathname.startsWith("/login")) login();
+  else await tournaments();
+} catch (error) {
+  app.innerHTML =
+    hero("La plateforme est indisponible.", error.message) +
+    '<button id="retry">Réessayer</button>';
+  $("#retry").onclick = () => location.reload();
+}

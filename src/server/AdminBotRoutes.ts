@@ -444,14 +444,19 @@ export function registerAdminBotRoutes(opts: {
     res.json({ teams: result.teams });
   });
 
-  app.post("/api/adminbot/game/:id/cancel", requireAdminBotKey, async (req, res) => {
-    const id = req.params.id as string;
-    if (!ownsGame(id, res)) return;
-    const game = gm.game(id);
-    if (game === null) return res.status(404).json({ error: "Game not found" });
-    await game.end();
-    res.json({ gameID: id, cancelled: true });
-  });
+  app.post(
+    "/api/adminbot/game/:id/cancel",
+    requireAdminBotKey,
+    async (req, res) => {
+      const id = req.params.id as string;
+      if (!ownsGame(id, res)) return;
+      const game = gm.game(id);
+      if (game === null)
+        return res.status(404).json({ error: "Game not found" });
+      await game.end();
+      res.json({ gameID: id, cancelled: true });
+    },
+  );
 
   app.post("/api/adminbot/game/:id/intent", requireAdminBotKey, (req, res) => {
     const id = req.params.id as string;

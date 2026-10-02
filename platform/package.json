@@ -2,6 +2,16 @@
   "name": "azertix-openfront-platform",
   "private": true,
   "type": "module",
-  "scripts": {"start": "node server.mjs", "test": "node --test tests/*.test.mjs"},
-  "dependencies": {"express": "5.2.1", "express-rate-limit": "8.5.1", "jose": "6.2.3", "pg": "8.16.3", "redis": "5.8.3", "zod": "4.4.2"}
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "express": "5.2.1",
+    "express-rate-limit": "8.5.1",
+    "jose": "6.2.3",
+    "pg": "8.16.3",
+    "redis": "5.8.3",
+    "zod": "4.4.2"
+  }
 }

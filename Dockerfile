@@ -101,4 +101,5 @@ else
 fi
 EOF
 RUN chmod +x /usr/local/bin/start.sh
+RUN chmod -R a+rX /usr/src/app
 ENTRYPOINT ["/usr/local/bin/start.sh"]

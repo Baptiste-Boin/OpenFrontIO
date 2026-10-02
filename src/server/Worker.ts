@@ -619,7 +619,8 @@ export async function startWorker() {
           const game = gm.game(clientMsg.gameID);
           const stored = game?.storedIdentity(persistentId) ?? null;
           const isReadmit = game?.wasAdmitted(persistentId) ?? false;
-          const steamAuthed = isSteamAuthenticated(claims) ||
+          const steamAuthed =
+            isSteamAuthenticated(claims) ||
             (ServerEnv.platformAuth() && claims?.provider === "discord");
           // SECURITY: the reject/skip/verify split (first joins must
           // present a token, only re-admits may omit it) lives in
