@@ -87,6 +87,11 @@ et les signalements. Aucun achat de la boutique officielle n’est implémenté.
 Le bot propose `/tournoi`, `/classement`, `/profil`, `/inscription`,
 `/prochaine-partie`, `/tournament`, `/match`, `/player`. Ses annonces utilisent
 une file SQL et désactivent les mentions Discord ; les échecs sont réessayés.
+Le panneau Live mesure les joueurs de partie, les connexions WebSocket, les
+parties et la charge du VPS via une route interne protégée. Les menus du jeu
+renvoient vers cette plateforme ; les scripts publicitaires et analytiques
+d’OpenFront officiel ne sont pas chargés dans ce mode.
+
 SMTP n’est pas nécessaire pour cette authentification exclusivement Discord.
 
 ## Sauvegarde et retour arrière

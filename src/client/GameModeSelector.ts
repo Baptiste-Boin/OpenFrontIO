@@ -698,8 +698,14 @@ export class GameModeSelector extends LitElement {
             true,
           )}
           ${this.renderSmallActionCard(
-            translateText("mode_selector.ranked_title"),
-            this.openRankedMenu,
+            window.BOOTSTRAP_CONFIG?.platformApiBase
+              ? "Tournois"
+              : translateText("mode_selector.ranked_title"),
+            window.BOOTSTRAP_CONFIG?.platformApiBase
+              ? () => {
+                  window.location.href = "/tournaments";
+                }
+              : this.openRankedMenu,
             SECONDARY_ACTION,
             undefined,
             true,

@@ -242,8 +242,16 @@ export function registerAdminBotRoutes(opts: {
   gm: GameManager;
   workerId: number;
   log: Logger;
+  webSocketCount?: () => number;
 }) {
   const { app, gm, workerId, log } = opts;
+  app.get("/api/adminbot/live", requireAdminBotKey, (_req, res) => {
+    res.json({
+      games: gm.activeGames(),
+      players: gm.activeClients(),
+      webSockets: opts.webSocketCount?.() ?? null,
+    });
+  });
 
   // Validate game id format and that this worker owns it. Returns false and
   // sends the error response when the id is bad/misrouted.

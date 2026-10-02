@@ -145,6 +145,9 @@
   "account_settings_modal": {
     "title": "Account Settings"
   },
+  "azertix": {
+    "discord_required": "Sign in with Discord to play multiplayer on AzertixYT."
+  },
   "ban_notice": {
     "appeal": "If you believe this is a mistake, contact us on Discord.",
     "category": {
@@ -2437,8 +2440,5 @@
     "you_won": "You Won!",
     "your_team": "Your team won!",
     "youtube_tutorial": "Need some help?"
-  },
-  "azertix": {
-    "discord_required": "Sign in with Discord to play multiplayer on AzertixYT."
   }
 }

@@ -3,6 +3,7 @@ import { rateLimit } from "express-rate-limit";
 import { exportJWK, importPKCS8, importSPKI, jwtVerify, SignJWT } from "jose";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -540,7 +541,10 @@ app.get(
   admin(["MODERATOR", "TOURNAMENT_ADMIN", "SUPER_ADMIN"]),
   async (req, res) => {
     const started = Date.now();
-    const health = await game("/api/health");
+    const [health, connections] = await Promise.all([
+      game("/api/health"),
+      game("/w0/api/adminbot/live"),
+    ]);
     const stats = (
       await db.query(`SELECT (SELECT count(*) FROM sessions WHERE expires_at>now())::int sessions,
   (SELECT count(*) FROM matches WHERE status IN ('lobby','running','paused'))::int active_matches,
@@ -549,6 +553,13 @@ app.get(
     res.json({
       ...stats,
       game: health,
+      connections,
+      host: {
+        loadAverage: os.loadavg(),
+        cpuCount: os.availableParallelism(),
+        memoryTotalBytes: os.totalmem(),
+        memoryFreeBytes: os.freemem(),
+      },
       latencyMs: Date.now() - started,
       memoryBytes: process.memoryUsage().rss,
       uptimeSeconds: Math.floor(process.uptime()),

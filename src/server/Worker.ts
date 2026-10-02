@@ -92,6 +92,7 @@ export async function startWorker() {
       // The ranked loop follows the deployment-active flag the master pushes
       // to this worker (OPE-469): a draining, standby or fenced server keeps
       // the games it has but stops offering new matches.
+      if (ServerEnv.platformAuth()) return;
       startRankedCheckinLoops({
         gm,
         playlist,
@@ -470,7 +471,13 @@ export async function startWorker() {
     baseDir: __dirname,
   });
 
-  registerAdminBotRoutes({ app, gm, workerId, log });
+  registerAdminBotRoutes({
+    app,
+    gm,
+    workerId,
+    log,
+    webSocketCount: () => wss.clients.size,
+  });
 
   // WebSocket handling
   wss.on("connection", (ws: WebSocket, req) => {

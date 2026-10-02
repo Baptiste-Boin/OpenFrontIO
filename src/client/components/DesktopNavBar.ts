@@ -47,6 +47,15 @@ export class DesktopNavBar extends LitElement {
   }
 
   render() {
+    if (window.BOOTSTRAP_CONFIG?.platformApiBase)
+      return html` <nav
+        class="hidden lg:flex w-full items-center justify-center gap-7 py-4 bg-zinc-900/90 text-white"
+      >
+        <a href="/" class="text-malibu-blue font-bold">AzertixYT · OpenFront</a>
+        <a href="/">Jouer</a><a href="/tournaments">Tournois et classement</a>
+        <a href="/profile">Mon profil</a><a href="/admin">Administration</a>
+        <nav-utility-icons size="desktop"></nav-utility-icons>
+      </nav>`;
     window.currentPageId ??= "page-play";
     const currentPage = window.currentPageId;
 

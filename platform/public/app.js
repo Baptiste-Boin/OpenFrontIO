@@ -241,6 +241,9 @@ async function adminContent(content) {
   if (currentTab === "live") {
     const data = await api("/admin/live");
     content.innerHTML = `<div class="grid">${[
+      ["Joueurs dans les parties", data.connections.players],
+      ["Connexions WebSocket", data.connections.webSockets],
+      ["Parties sur le serveur", data.connections.games],
       ["Comptes", data.users],
       ["Sessions actives", data.sessions],
       ["Manches actives", data.active_matches],
@@ -252,7 +255,7 @@ async function adminContent(content) {
       )
       .join(
         "",
-      )}</div><div class="card"><div class="row spread"><h2>État de la plateforme</h2><span class="pill">Jeu disponible</span></div><p>API : ${Math.round(data.memoryBytes / 1024 / 1024)} Mo de mémoire · en ligne depuis ${Math.floor(data.uptimeSeconds / 60)} min</p><p class="muted">Discord : ${data.discord ? "configuré" : "en attente"} · Bot : ${data.bot ? "configuré" : "en attente"}</p><p class="muted">Version <code>${esc((data.release ?? "").slice(0, 12))}</code></p></div>`;
+      )}</div><div class="card"><div class="row spread"><h2>État de la plateforme</h2><span class="pill">Jeu disponible</span></div><p>API : ${Math.round(data.memoryBytes / 1024 / 1024)} Mo de mémoire · en ligne depuis ${Math.floor(data.uptimeSeconds / 60)} min</p><p class="muted">Hôte : charge 1 min ${data.host.loadAverage[0].toFixed(2)} · ${data.host.cpuCount} CPU · mémoire libre ${Math.round(data.host.memoryFreeBytes / 1024 / 1024)} Mo</p><p class="muted">Discord : ${data.discord ? "configuré" : "en attente"} · Bot : ${data.bot ? "configuré" : "en attente"}</p><p class="muted">Version <code>${esc((data.release ?? "").slice(0, 12))}</code></p></div>`;
     return;
   }
   if (currentTab === "tournaments") {
