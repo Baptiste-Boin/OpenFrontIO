@@ -46,10 +46,20 @@ const toggle = (name, label, checked = false, help = "") =>
 let mapCatalog;
 export async function openRoomConfigurator({ create, onCreated, notice }) {
   if (!mapCatalog) {
-    const response = await fetch("/platform-api/ui/maps.json");
-    if (!response.ok)
+    const [response, assetResponse] = await Promise.all([
+      fetch("/platform-api/ui/maps.json"),
+      fetch("/asset-manifest.json"),
+    ]);
+    if (!response.ok || !assetResponse.ok)
       throw new Error("Impossible de charger les cartes. Réessaie.");
-    mapCatalog = await response.json();
+    const [catalog, manifest] = await Promise.all([
+      response.json(),
+      assetResponse.json(),
+    ]);
+    mapCatalog = catalog.map((map) => ({
+      ...map,
+      thumbnail: manifest[map.thumbnail.slice(1)] ?? map.thumbnail,
+    }));
   }
   let selected = mapCatalog.find((map) => map.value === "World");
   const d = document.createElement("dialog");

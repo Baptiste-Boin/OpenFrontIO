@@ -13,7 +13,20 @@ import { GameConfigSchema } from "../../src/core/Schemas";
 beforeEach(() => {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue({ ok: true, json: async () => catalog }),
+    vi.fn(async (url) => ({
+      ok: true,
+      json: async () =>
+        url === "/asset-manifest.json"
+          ? Object.fromEntries(
+              catalog.map((map) => [
+                map.thumbnail.slice(1),
+                map.thumbnail
+                  .replace("/maps/", "/_assets/maps/")
+                  .replace("thumbnail.webp", "thumbnail.testhash.webp"),
+              ]),
+            )
+          : catalog,
+    })),
   );
   HTMLDialogElement.prototype.showModal = function () {
     this.open = true;
@@ -105,6 +118,9 @@ describe("private room configuration", () => {
     const notice = vi.fn();
     await openRoomConfigurator({ create, onCreated, notice });
     expect(document.querySelectorAll("[data-map]").length).toBe(maps.length);
+    expect(document.querySelector("[data-preview]").getAttribute("src")).toBe(
+      "/_assets/maps/world/thumbnail.testhash.webp",
+    );
     change("name", "Interface validation");
     click('[data-map="Japan"]');
     click('[data-mode="Team"]');
