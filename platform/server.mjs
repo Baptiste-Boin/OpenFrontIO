@@ -10,6 +10,12 @@ import pg from "pg";
 import { createClient } from "redis";
 import { z } from "zod";
 import { startDiscordBot } from "./bot.mjs";
+import {
+  nativeToRoomInput,
+  roomGameConfig,
+  RoomInputSchema,
+  TournamentInputSchema,
+} from "./room-config.mjs";
 import { registerRooms } from "./rooms.mjs";
 import {
   cookie,
@@ -620,16 +626,8 @@ app.get(
     });
   },
 );
-const tournamentInput = z.object({
-  name: z.string().trim().min(3).max(120),
-  startsAt: z.iso.datetime(),
-  capacity: z.number().int().min(2).max(200),
-  rounds: z.number().int().min(1).max(20),
-  rules: z.string().max(5000).default(""),
-  gameConfig: z.record(z.string(), z.unknown()).default({}),
-});
 app.post("/admin/tournaments", admin(), async (req, res) => {
-  const input = parse(tournamentInput, req.body);
+  const input = parse(TournamentInputSchema, req.body);
   const id = crypto.randomUUID();
   await transaction(async (client) => {
     await client.query(
@@ -641,7 +639,15 @@ app.post("/admin/tournaments", admin(), async (req, res) => {
         input.capacity,
         input.rounds,
         input.rules,
-        input.gameConfig,
+        roomGameConfig(
+          RoomInputSchema.parse(
+            nativeToRoomInput(
+              input.gameConfig,
+              "Configuration",
+              input.capacity,
+            ),
+          ),
+        ),
       ],
     );
     await audit(client, req.user, "create_tournament", id);

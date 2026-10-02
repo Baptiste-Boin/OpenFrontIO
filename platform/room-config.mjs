@@ -103,3 +103,46 @@ export function roomGameConfig(input) {
     featured: false,
   };
 }
+
+// Tournaments use the same settings whitelist as code rooms. Access control
+// (capacity, private visibility and roster) is set by the platform, never by
+// arbitrary native-editor fields supplied by the browser.
+const nativeSettings = { ...RoomInputSchema.shape };
+delete nativeSettings.name;
+delete nativeSettings.capacity;
+delete nativeSettings.map;
+export const NativeSettingsSchema = z
+  .object({
+    ...nativeSettings,
+    gameMap: RoomInputSchema.shape.map,
+    gameType: z.literal("Private").optional(),
+    maxPlayers: z.number().int().min(2).max(200).optional(),
+    listed: z.literal(false).optional(),
+    featured: z.literal(false).optional(),
+  })
+  .strict()
+  .superRefine((input, ctx) => {
+    const result = RoomInputSchema.safeParse(
+      nativeToRoomInput(input, "Configuration", 20),
+    );
+    if (!result.success)
+      for (const issue of result.error.issues) ctx.addIssue(issue);
+  });
+
+export function nativeToRoomInput(config, name, capacity) {
+  const settings = { ...config };
+  for (const key of ["gameMap", "gameType", "maxPlayers", "listed", "featured"])
+    delete settings[key];
+  return { ...settings, name, capacity, map: config.gameMap };
+}
+
+export const TournamentInputSchema = z
+  .object({
+    name: z.string().trim().min(3).max(120),
+    startsAt: z.iso.datetime(),
+    capacity: z.number().int().min(2).max(200),
+    rounds: z.number().int().min(1).max(20),
+    rules: z.string().max(5000).default(""),
+    gameConfig: NativeSettingsSchema.default({}),
+  })
+  .strict();

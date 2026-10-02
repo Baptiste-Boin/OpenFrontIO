@@ -144,3 +144,11 @@ réverse pas une migration SQL (les migrations de cette version sont additives).
 Contrôles : `/platform-api/health`, `/api/health`, conteneurs healthy, classement
 et sauvegarde. Une validation solo ne prouve pas un tournoi réel à plusieurs
 joueurs, une connexion Discord réelle ou l’envoi de commandes par le bot.
+
+### Création des parties et tournois
+
+Sur le site avec `PLATFORM_API_BASE`, les joueurs rejoignent une partie avec un code. Les parties solo et le tutoriel jouable sont désactivés, y compris les lancements directs du composant et de la route de modal. Le mode solo reste disponible dans une installation OpenFront classique sans plateforme.
+
+Dans Administration → Salons ou Tournois, la création embarque le véritable `SinglePlayerModal` et ses composants `GameConfigSettings` / `MapPicker`. Le bouton « Utiliser ces réglages » émet une configuration privée ; cette vue ne crée jamais de partie solo. Carte, équipes (2 à 8, duos, trios, quatuors, humains contre nations), bots, nations et options avancées sont transmis au serveur. Les tournois réutilisent ces réglages pour chaque manche.
+
+Le message du configurateur est lié à son iframe, à l’origine du site et à un identifiant de création. Les API gardent leurs contrôles de session administrateur, de CSRF et une liste stricte de réglages autorisés. Capacité, visibilité privée et accès des inscrits restent imposés côté serveur.

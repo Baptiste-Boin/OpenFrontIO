@@ -53,6 +53,7 @@ const TEAM_COUNT_OPTIONS: TeamCountConfig[] = [
   5,
   6,
   7,
+  8,
   Quads,
   Trios,
   Duos,

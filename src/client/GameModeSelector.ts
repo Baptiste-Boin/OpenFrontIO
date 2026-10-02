@@ -713,22 +713,6 @@ export class GameModeSelector extends LitElement {
           </button>
         </div>
       </form>
-      <div class="flex gap-4 h-14">
-        <div class="flex-1">
-          ${this.renderSmallActionCard(
-            translateText("main.solo"),
-            this.openSinglePlayerModal,
-            SECONDARY_ACTION,
-          )}
-        </div>
-        <div class="flex-1">
-          ${this.renderSmallActionCard(
-            translateText("main.tutorial"),
-            this.startTutorial,
-            TUTORIAL_ACTION,
-          )}
-        </div>
-      </div>
       <a
         href="/admin"
         class="text-sm text-white/60 hover:text-white text-center py-2"
@@ -916,6 +900,7 @@ export class GameModeSelector extends LitElement {
   };
 
   private openSinglePlayerModal = () => {
+    if (window.BOOTSTRAP_CONFIG?.platformApiBase) return;
     if (!this.validateUsername()) return;
     (
       document.querySelector("single-player-modal") as SinglePlayerModal
@@ -924,6 +909,7 @@ export class GameModeSelector extends LitElement {
 
   // Handled in Main, which also serves the help page's tutorial button.
   private startTutorial = () => {
+    if (window.BOOTSTRAP_CONFIG?.platformApiBase) return;
     if (!this.validateUsername()) return;
     document.dispatchEvent(new CustomEvent("start-tutorial"));
   };

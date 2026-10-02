@@ -319,7 +319,7 @@ async function adminContent(content) {
       data
         .map(
           (t) =>
-            `<div class="card"><div class="row spread"><h3>${esc(t.name)}</h3>${pill(t.status)}</div><p class="muted">${date(t.starts_at)} · ${t.registered}/${t.capacity} joueurs · ${t.rounds} manches</p><div class="row">${(
+            `<div class="card"><div class="row spread"><h3>${esc(t.name)}</h3>${pill(t.status)}</div><p class="muted">${date(t.starts_at)} · ${t.registered}/${t.capacity} joueurs · ${t.rounds} manches</p>${roomSettings(t.game_config ?? {})}<div class="row">${(
               {
                 draft: [["Ouvrir les inscriptions", "open"]],
                 open: [["Fermer les inscriptions", "closed"]],
@@ -494,27 +494,16 @@ async function doAction(action) {
     return;
   }
   if (type === "create") {
-    dialog(
-      "Nouveau tournoi",
-      `<label>Nom<input name="name" required minlength="3" maxlength="120"></label><div class="fields"><label>Date et heure de Paris<input name="startsAt" type="datetime-local" required></label><label>Places<input name="capacity" type="number" min="2" max="200" value="32" required></label><label>Manches<input name="rounds" type="number" min="1" max="20" value="3" required></label><label>Carte<select name="map"><option value="World">Monde</option><option value="Europe">Europe</option><option value="France">France</option></select></label></div><label>Règles<textarea name="rules" maxlength="5000"></textarea></label>`,
-      async (data) => {
-        const local = data.get("startsAt");
-        const startsAt = parisToISO(local);
-        await api("/admin/tournaments", {
-          name: data.get("name"),
-          startsAt,
-          capacity: Number(data.get("capacity")),
-          rounds: Number(data.get("rounds")),
-          rules: data.get("rules"),
-          gameConfig: {
-            gameMap: data.get("map"),
-            gameMode: "Free For All",
-            bots: 0,
-            nations: "disabled",
-          },
-        });
-      },
-    );
+    await openRoomConfigurator({
+      kind: "tournament",
+      create: (settings) =>
+        api("/admin/tournaments", {
+          ...settings,
+          startsAt: parisToISO(settings.startsAt),
+        }),
+      onCreated: renderAdmin,
+      notice,
+    });
     return;
   }
   if (type === "history") {

@@ -2,8 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import catalog from "../../platform/public/maps.json";
 import { openRoomConfigurator } from "../../platform/public/room-config.js";
 import {
+  NativeSettingsSchema,
+  nativeToRoomInput,
   roomGameConfig,
   RoomInputSchema,
+  TournamentInputSchema,
 } from "../../platform/room-config.mjs";
 import { maps } from "../../src/core/game/Maps.gen";
 import { GameConfigSchema } from "../../src/core/Schemas";
@@ -11,23 +14,6 @@ import { GameConfigSchema } from "../../src/core/Schemas";
 // Exercises the actual rendered form and native wire contract, rather than
 // mirroring the controls: maps/teams/options must survive into engine settings.
 beforeEach(() => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (url) => ({
-      ok: true,
-      json: async () =>
-        url === "/asset-manifest.json"
-          ? Object.fromEntries(
-              catalog.map((map) => [
-                map.thumbnail.slice(1),
-                map.thumbnail
-                  .replace("/maps/", "/_assets/maps/")
-                  .replace("thumbnail.webp", "thumbnail.testhash.webp"),
-              ]),
-            )
-          : catalog,
-    })),
-  );
   HTMLDialogElement.prototype.showModal = function () {
     this.open = true;
   };
@@ -45,17 +31,6 @@ const change = (name, value) => {
   field(name).value = value;
   field(name).dispatchEvent(new Event("change", { bubbles: true }));
 };
-const check = (name, checked = true) => {
-  const element = field(name);
-  element.checked = checked;
-  element.dispatchEvent(new Event("change", { bubbles: true }));
-};
-const submit = () =>
-  document
-    .querySelector("form")
-    .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-const click = (selector) => document.querySelector(selector).click();
-
 describe("private room configuration", () => {
   it("catalog covers every native map with its real thumbnail and nation count", () => {
     expect(catalog.map((m) => m.value).sort()).toEqual(
@@ -112,93 +87,162 @@ describe("private room configuration", () => {
       ).toBe(false);
     }
   });
-  it("submits defaults and advanced team options through the rendered form", async () => {
-    const create = vi.fn().mockResolvedValue({});
-    const onCreated = vi.fn();
-    const notice = vi.fn();
-    await openRoomConfigurator({ create, onCreated, notice });
-    expect(document.querySelectorAll("[data-map]").length).toBe(maps.length);
-    expect(document.querySelector("[data-preview]").getAttribute("src")).toBe(
-      "/_assets/maps/world/thumbnail.testhash.webp",
-    );
-    change("name", "Interface validation");
-    click('[data-map="Japan"]');
-    click('[data-mode="Team"]');
-    change("playerTeams", "Duos");
-    change("difficulty", "Hard");
-    change("gameMapSize", "Compact");
-    change("nations", "custom");
-    change("nationCount", "12");
-    change("bots", "50");
-    check("randomSpawn");
-    check("infiniteGold");
-    check("instantBuild");
-    check("maxTimer");
-    change("maxTimerValue", "45");
-    change("allianceMode", "custom");
-    change("customAllianceDuration", "0");
-    check("doomsday");
-    change("doomsdaySpeed", "fast");
-    check("overtime");
-    change("overtimeMinutes", "20");
-    change("goldMultiplier", "2.5");
-    change("startingGold", "500000");
-    check("unit:Atom Bomb", false);
-    check("unit:Hydrogen Bomb", false);
-    submit();
-    await vi.waitFor(() => expect(onCreated).toHaveBeenCalledOnce());
-    const config = roomGameConfig(
-      RoomInputSchema.parse(create.mock.calls[0][0]),
-    );
-    expect(config).toMatchObject({
+  it("tournament settings use the native contract and cannot inject a roster or solo game", () => {
+    const config = NativeSettingsSchema.parse({
       gameMap: "Japan",
-      gameMapSize: "Compact",
+      gameType: "Private",
       gameMode: "Team",
       playerTeams: "Duos",
-      difficulty: "Hard",
       bots: 50,
-      nations: 12,
-      randomSpawn: true,
-      infiniteGold: true,
-      instantBuild: true,
-      maxTimerValue: 45,
-      customAllianceDuration: 0,
       goldMultiplier: 2.5,
       startingGold: 500000,
-      disabledUnits: ["Atom Bomb", "Hydrogen Bomb"],
-      doomsdayClock: { enabled: true, speed: "fast" },
-      overtime: { enabled: true, startMinutes: 20 },
-      listed: false,
-      featured: false,
     });
-    expect(GameConfigSchema.partial().safeParse(config).success).toBe(true);
+    const tournament = TournamentInputSchema.parse({
+      name: "Tournament",
+      startsAt: "2026-10-05T18:00:00Z",
+      capacity: 24,
+      rounds: 3,
+      gameConfig: config,
+    });
+    expect(
+      roomGameConfig(
+        RoomInputSchema.parse(
+          nativeToRoomInput(
+            tournament.gameConfig,
+            "Configuration",
+            tournament.capacity,
+          ),
+        ),
+      ),
+    ).toMatchObject({
+      gameMap: "Japan",
+      maxPlayers: 24,
+      playerTeams: "Duos",
+      startingGold: 500000,
+      goldMultiplier: 2.5,
+      gameType: "Private",
+    });
+    for (const extra of [
+      { allowedPublicIds: ["intruder"] },
+      { gameType: "Singleplayer" },
+      { listed: true },
+      { trusted: true },
+      { gameMap: "Unknown" },
+      {
+        gameMode: "Team",
+        playerTeams: "Humans Vs Nations",
+        nations: "disabled",
+      },
+    ]) {
+      expect(
+        NativeSettingsSchema.safeParse({ ...config, ...extra }).success,
+      ).toBe(false);
+    }
   });
-  it("search does not lose selection, solo means FFA and a rejected save stays editable", async () => {
+  it("accepts only the matching native frame and preserves settings for both creation flows", async () => {
+    for (const kind of ["room", "tournament"]) {
+      const create = vi.fn().mockResolvedValue({});
+      const onCreated = vi.fn();
+      await openRoomConfigurator({ kind, create, onCreated, notice: vi.fn() });
+      change("name", "Native configuration validation");
+      change("capacity", "12");
+      if (kind === "tournament") {
+        change("startsAt", "2026-10-05T20:00");
+        change("rounds", "3");
+      }
+      const frame = document.querySelector("iframe");
+      const requestId = new URL(frame.src).searchParams.get(
+        "configurationRequest",
+      );
+      const config = {
+        gameMap: "Japan",
+        gameType: "Private",
+        gameMode: "Team",
+        playerTeams: "Duos",
+        bots: 50,
+        nations: "default",
+        difficulty: "Hard",
+        gameMapSize: "Compact",
+        instantBuild: true,
+        startingGold: 500000,
+        goldMultiplier: 2.5,
+      };
+      const data = { type: "openfront-game-config", requestId, config };
+      for (const forged of [
+        {
+          origin: "https://attacker.example",
+          source: frame.contentWindow,
+          data,
+        },
+        { origin: location.origin, source: window, data },
+        {
+          origin: location.origin,
+          source: frame.contentWindow,
+          data: { ...data, requestId: "wrong-request" },
+        },
+      ])
+        window.dispatchEvent(new MessageEvent("message", forged));
+      expect(create).not.toHaveBeenCalled();
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: location.origin,
+          source: frame.contentWindow,
+          data,
+        }),
+      );
+      await vi.waitFor(() => expect(onCreated).toHaveBeenCalledOnce());
+      const input = create.mock.calls[0][0];
+      const settings =
+        kind === "room"
+          ? RoomInputSchema.parse(input)
+          : RoomInputSchema.parse(
+              nativeToRoomInput(
+                NativeSettingsSchema.parse(input.gameConfig),
+                "Configuration",
+                input.capacity,
+              ),
+            );
+      expect(roomGameConfig(settings)).toMatchObject({
+        gameMap: "Japan",
+        gameMode: "Team",
+        playerTeams: "Duos",
+        maxPlayers: 12,
+        instantBuild: true,
+        startingGold: 500000,
+        goldMultiplier: 2.5,
+      });
+    }
+  });
+  it("a rejected save remains editable and cannot create twice during a pending request", async () => {
     const create = vi
       .fn()
       .mockRejectedValueOnce(new Error("Échec serveur"))
       .mockResolvedValue({});
     await openRoomConfigurator({ create, onCreated: vi.fn(), notice: vi.fn() });
-    click('[data-map="France"]');
-    const search = document.querySelector("[data-search]");
-    search.value = "Monde";
-    search.dispatchEvent(new Event("input", { bubbles: true }));
-    expect(field("map").value).toBe("France");
     change("name", "Retry validation");
-    submit();
+    const frame = document.querySelector("iframe");
+    const event = () =>
+      new MessageEvent("message", {
+        origin: location.origin,
+        source: frame.contentWindow,
+        data: {
+          type: "openfront-game-config",
+          requestId: new URL(frame.src).searchParams.get(
+            "configurationRequest",
+          ),
+          config: { gameMap: "World", gameType: "Private" },
+        },
+      });
+    window.dispatchEvent(event());
+    window.dispatchEvent(event());
     await vi.waitFor(() =>
       expect(document.querySelector("[data-error]").textContent).toBe(
         "Échec serveur",
       ),
     );
-    expect(document.querySelector('[type="submit"]').disabled).toBe(false);
-    const config = roomGameConfig(
-      RoomInputSchema.parse(create.mock.calls[0][0]),
-    );
-    expect(config.gameMode).toBe("Free For All");
-    expect(config).not.toHaveProperty("playerTeams");
-    expect(config.donateTroops).toBe(false);
-    submit();
+    expect(create).toHaveBeenCalledOnce();
+    expect(frame.hasAttribute("inert")).toBe(false);
+    window.dispatchEvent(event());
     await vi.waitFor(() => expect(document.querySelector("dialog")).toBeNull());
   });
 });
