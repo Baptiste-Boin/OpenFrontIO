@@ -120,7 +120,7 @@ async function tournaments() {
 async function showTournament(id) {
   const t = await api("/tournaments/" + encodeURIComponent(id));
   const d = document.createElement("dialog");
-  d.innerHTML = `<div class="row spread"><h2>${esc(t.name)}</h2><button class="secondary small" id="close">Fermer</button></div>${pill(t.status)}<p>${date(t.starts_at)} · ${t.capacity} places · ${t.rounds} manches</p><p class="detail muted">${esc(t.rules) || "Victoire : 10 points. Participation à une manche terminée : 1 point. Les parties annulées ne rapportent aucun point."}</p>${t.status === "open" ? `<div class="row"><button id="register">M’inscrire avec Discord</button><button class="secondary" id="unregister">Me désinscrire</button></div>` : ""}<h3 style="margin-top:25px">Manches</h3>${nonEmpty(t.matches.map((m) => `<div class="row spread card">Manche ${m.round} ${pill(m.status)}<a class="button small secondary" href="/?gameID=${esc(m.game_id)}">Rejoindre</a></div>`).join(""), empty("Les lobbies seront créés au démarrage du tournoi."))}<h3 style="margin-top:20px">Participants & classement</h3>${table(
+  d.innerHTML = `<div class="row spread"><h2>${esc(t.name)}</h2><button class="secondary small" id="close">Fermer</button></div>${pill(t.status)}<p>${date(t.starts_at)} · ${t.capacity} places · ${t.rounds} manches</p><p class="detail muted">${esc(t.rules) || "Victoire : 10 points. Participation à une manche terminée : 1 point. Les parties annulées ne rapportent aucun point."}</p>${t.status === "open" ? `<div class="row"><button id="register">M’inscrire avec Discord</button><button class="secondary" id="unregister">Me désinscrire</button></div>` : ""}<h3 style="margin-top:25px">Manches</h3>${nonEmpty(t.matches.map((m) => `<div class="row spread card">Manche ${m.round} ${pill(m.status)}<a class="button small secondary" href="/game/${esc(m.game_id)}">Rejoindre</a></div>`).join(""), empty("Les lobbies seront créés au démarrage du tournoi."))}<h3 style="margin-top:20px">Participants & classement</h3>${table(
     ["Joueur", "Points", "Victoires"],
     t.standings.map(
       (p) =>
@@ -183,7 +183,7 @@ function login(
           username: data.get("username"),
           code: String(data.get("code")).replace(/[\s-]/g, "").toUpperCase(),
         });
-        location.href = "/?gameID=" + encodeURIComponent(result.gameId);
+        location.href = "/game/" + encodeURIComponent(result.gameId);
       }
     } catch (error) {
       $("#login-error").textContent = error.message;
@@ -231,7 +231,7 @@ async function profile() {
   const rooms = await api("/me/rooms");
   app.insertAdjacentHTML(
     "beforeend",
-    `<section class="card"><h2>Mes salons</h2>${rooms.length ? rooms.map((r) => `<div class="row spread profile-room"><div><strong>${esc(r.name)}</strong> ${pill(r.status)}</div>${["lobby", "running", "paused"].includes(r.status) ? `<a class="button secondary small" href="/?gameID=${esc(r.game_id)}">Rejoindre</a>` : ""}</div>`).join("") : '<p class="muted">Rejoins ton premier salon avec le code de l’organisateur.</p><a class="button secondary small" href="/login">Entrer un code</a>'}</section>`,
+    `<section class="card"><h2>Mes salons</h2>${rooms.length ? rooms.map((r) => `<div class="row spread profile-room"><div><strong>${esc(r.name)}</strong> ${pill(r.status)}</div>${["lobby", "running", "paused"].includes(r.status) ? `<a class="button secondary small" href="/game/${esc(r.game_id)}">Rejoindre</a>` : ""}</div>`).join("") : '<p class="muted">Rejoins ton premier salon avec le code de l’organisateur.</p><a class="button secondary small" href="/login">Entrer un code</a>'}</section>`,
   );
   app.insertAdjacentHTML(
     "beforeend",
@@ -290,7 +290,7 @@ async function adminContent(content) {
   if (currentTab === "rooms") {
     const rooms = await api("/admin/rooms");
     const manage = ["SUPER_ADMIN", "TOURNAMENT_ADMIN"].includes(me.role);
-    content.innerHTML = `<div class="row spread section-heading"><h2>Mes salons</h2>${manage ? button("+ Créer un salon", "room-create", false) : ""}</div>${rooms.length ? `<div class="grid rooms-grid">${rooms.map((r) => `<article class="card room-card"><div class="row spread"><h3>${esc(r.name)}</h3>${pill(r.status)}</div><p class="muted">${esc(r.config.gameMap)} · ${r.registered} / ${r.capacity} joueurs inscrits</p><div class="room-code"><span>Code à partager</span><strong>${esc(r.code)}</strong><div class="row">${button("Copier le code", `copy-code:${r.code}`)}${button("Copier le lien", `copy-link:${r.code}`)}</div></div><div class="row room-actions"><a class="button secondary small" href="/?gameID=${esc(r.game_id)}">Jouer</a>${["lobby", "running", "paused"].includes(r.status) ? button("Voir les joueurs", `room-players:${r.id}`) : ""}${manage && r.status === "lobby" ? button("Démarrer", `room-action:${r.id}:start`, false) : ""}${manage && r.status === "running" ? button("Pause", `room-action:${r.id}:pause`) : ""}${manage && r.status === "paused" ? button("Reprendre", `room-action:${r.id}:resume`, false) : ""}${manage && ["lobby", "running", "paused"].includes(r.status) ? button("Fermer", `room-action:${r.id}:cancel`) : ""}</div></article>`).join("")}</div>` : `<div class="empty"><h3>Ton premier salon</h3><p>Choisis une carte, crée le salon, puis donne le code aux joueurs.</p>${manage ? button("Créer un salon", "room-create", false) : ""}</div>`}`;
+    content.innerHTML = `<div class="row spread section-heading"><h2>Mes salons</h2>${manage ? button("+ Créer un salon", "room-create", false) : ""}</div>${rooms.length ? `<div class="grid rooms-grid">${rooms.map((r) => `<article class="card room-card"><div class="row spread"><h3>${esc(r.name)}</h3>${pill(r.status)}</div><p class="muted">${esc(r.config.gameMap)} · ${r.registered} / ${r.capacity} joueurs inscrits</p><div class="room-code"><span>Code à partager</span><strong>${esc(r.code)}</strong><div class="row">${button("Copier le code", `copy-code:${r.code}`)}${button("Copier le lien", `copy-link:${r.code}`)}</div></div><div class="row room-actions"><a class="button secondary small" href="/game/${esc(r.game_id)}">Jouer</a>${["lobby", "running", "paused"].includes(r.status) ? button("Voir les joueurs", `room-players:${r.id}`) : ""}${manage && r.status === "lobby" ? button("Démarrer", `room-action:${r.id}:start`, false) : ""}${manage && r.status === "running" ? button("Pause", `room-action:${r.id}:pause`) : ""}${manage && r.status === "paused" ? button("Reprendre", `room-action:${r.id}:resume`, false) : ""}${manage && ["lobby", "running", "paused"].includes(r.status) ? button("Fermer", `room-action:${r.id}:cancel`) : ""}</div></article>`).join("")}</div>` : `<div class="empty"><h3>Ton premier salon</h3><p>Choisis une carte, crée le salon, puis donne le code aux joueurs.</p>${manage ? button("Créer un salon", "room-create", false) : ""}</div>`}`;
   }
   if (currentTab === "live") {
     const data = await api("/admin/live");
@@ -341,7 +341,7 @@ async function adminContent(content) {
   }
   if (currentTab === "matches") {
     const data = await api("/admin/matches");
-    content.innerHTML = `<h2>Parties de tournoi</h2>${nonEmpty(data.map((m) => `<div class="card"><div class="row spread"><h3>${esc(m.name)} · Manche ${m.round}</h3>${pill(m.status)}</div><p class="muted">Code <code>${esc(m.game_id)}</code></p><div class="row"><a class="button small secondary" href="/?gameID=${esc(m.game_id)}">Ouvrir le lobby</a>${button("Joueurs", `roster:${m.id}`)}${m.status === "cancelled" ? button("Recréer cette manche", `restart:${m.id}`) : ""}${m.status === "lobby" ? button("Démarrer", `action:${m.id}:start`) : ""}${m.status === "running" ? button("Mettre en pause", `action:${m.id}:pause`) : ""}${m.status === "paused" ? button("Reprendre", `action:${m.id}:resume`) : ""}${!["finished", "cancelled"].includes(m.status) ? button("Annuler", `action:${m.id}:cancel`) : ""}</div></div>`).join(""), empty("Crée une manche depuis un tournoi en cours."))}`;
+    content.innerHTML = `<h2>Parties de tournoi</h2>${nonEmpty(data.map((m) => `<div class="card"><div class="row spread"><h3>${esc(m.name)} · Manche ${m.round}</h3>${pill(m.status)}</div><p class="muted">Code <code>${esc(m.game_id)}</code></p><div class="row"><a class="button small secondary" href="/game/${esc(m.game_id)}">Ouvrir le lobby</a>${button("Joueurs", `roster:${m.id}`)}${m.status === "cancelled" ? button("Recréer cette manche", `restart:${m.id}`) : ""}${m.status === "lobby" ? button("Démarrer", `action:${m.id}:start`) : ""}${m.status === "running" ? button("Mettre en pause", `action:${m.id}:pause`) : ""}${m.status === "paused" ? button("Reprendre", `action:${m.id}:resume`) : ""}${!["finished", "cancelled"].includes(m.status) ? button("Annuler", `action:${m.id}:cancel`) : ""}</div></div>`).join(""), empty("Crée une manche depuis un tournoi en cours."))}`;
   }
   if (currentTab === "users") {
     content.innerHTML =

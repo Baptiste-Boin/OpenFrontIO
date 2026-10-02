@@ -175,7 +175,7 @@ export function startDiscordBot({ db, origin, env }) {
         )
       ).rows[0];
       return m
-        ? `🎮 ${m.name}\n${origin}/?gameID=${m.game_id}`
+        ? `🎮 ${m.name}\n${origin}/game/${m.game_id}`
         : "Aucune manche en attente.";
     }
     const user = (
@@ -236,7 +236,7 @@ export function startDiscordBot({ db, origin, env }) {
           `/admin/tournaments/${encodeURIComponent(args.id)}/matches`,
           {},
         );
-        return `Manche créée : ${m.id}\n${origin}/?gameID=${m.gameId}`;
+        return `Manche créée : ${m.id}\n${origin}/game/${m.gameId}`;
       }
       await apiFor(
         user,

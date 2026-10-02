@@ -738,7 +738,7 @@ app.post("/admin/tournaments/:id/matches", admin(), async (req, res) => {
     );
     await audit(client, req.user, "create_match", gameId);
     await client.query("INSERT INTO announcements(content) VALUES($1)", [
-      `🎮 ${t.name} — manche ${round}\n${origin}/?gameID=${gameId}`,
+      `🎮 ${t.name} — manche ${round}\n${origin}/game/${gameId}`,
     ]);
     return { id: matchId, gameId, round };
   });
@@ -792,7 +792,7 @@ app.post("/admin/matches/:id/restart", admin(), async (req, res) => {
     );
     await audit(client, req.user, "restart_match", gameId);
     await client.query("INSERT INTO announcements(content) VALUES($1)", [
-      `🎮 Manche ${m.round} recréée\n${origin}/?gameID=${gameId}`,
+      `🎮 Manche ${m.round} recréée\n${origin}/game/${gameId}`,
     ]);
     return { id, gameId, round: m.round };
   });

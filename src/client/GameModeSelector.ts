@@ -667,7 +667,7 @@ export class GameModeSelector extends LitElement {
       const result = await response.json();
       if (!response.ok)
         throw new Error(result.error ?? translateText("azertix.code_required"));
-      window.location.href = `/?gameID=${encodeURIComponent(result.gameId)}`;
+      window.location.href = `/game/${encodeURIComponent(result.gameId)}`;
     } catch (error) {
       showToast(
         error instanceof Error
