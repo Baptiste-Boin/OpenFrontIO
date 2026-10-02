@@ -1,0 +1,8 @@
+[Unit]
+Description=Nightly OpenFront PostgreSQL backup
+[Timer]
+OnCalendar=*-*-* 02:45:00 Europe/Paris
+Persistent=true
+RandomizedDelaySec=5min
+[Install]
+WantedBy=timers.target

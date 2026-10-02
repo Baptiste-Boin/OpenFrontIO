@@ -472,7 +472,7 @@ class Client {
     // so rendering the widget there just fails — and replays never
     // send a token anyway (see getTurnstileToken below).
     const turnstilePrefetch =
-      isDesktopShell() || isReplayShellHost(window.location.hostname)
+      window.BOOTSTRAP_CONFIG?.platformApiBase || isDesktopShell() || isReplayShellHost(window.location.hostname)
         ? null
         : getTurnstileToken();
     // A prefetch that fails is not an error anyone has asked about yet: the
@@ -1963,6 +1963,7 @@ class Client {
     lobby: JoinLobbyEvent,
   ): Promise<string | null> {
     if (
+      window.BOOTSTRAP_CONFIG?.platformApiBase ||
       ClientEnv.env() === GameEnv.Dev ||
       isDesktopShell() ||
       // Single-player and replays: no server to verify a token against (and

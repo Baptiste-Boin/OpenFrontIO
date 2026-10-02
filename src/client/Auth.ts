@@ -767,6 +767,10 @@ export async function sendMagicLink(email: string): Promise<boolean> {
 export async function getPlayToken(): Promise<string> {
   const result = await userAuth();
   if (result !== false) return result.jwt;
+  if (window.BOOTSTRAP_CONFIG?.platformApiBase) {
+    window.location.assign("/login");
+    throw new Error(translateText("azertix.discord_required"));
+  }
   return getPersistentIDFromLocalStorage();
 }
 

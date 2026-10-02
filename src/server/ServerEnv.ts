@@ -105,7 +105,14 @@ export class ServerEnv {
   static cdnBase(): string {
     return process.env.CDN_BASE ?? "";
   }
+  static apiBaseUrl(): string {
+    return process.env.API_INTERNAL_URL ?? ServerEnv.jwtIssuer();
+  }
+  static platformAuth(): boolean {
+    return process.env.PLATFORM_AUTH === "discord";
+  }
   static jwtIssuer(): string {
+    if (process.env.JWT_ISSUER) return process.env.JWT_ISSUER;
     const audience = ServerEnv.jwtAudience();
     return audience === "localhost"
       ? "http://localhost:8787"
@@ -113,7 +120,7 @@ export class ServerEnv {
   }
   static async jwkPublicKey(): Promise<JWK> {
     if (ServerEnv.publicKey) return ServerEnv.publicKey;
-    const jwksUrl = ServerEnv.jwtIssuer() + "/.well-known/jwks.json";
+    const jwksUrl = ServerEnv.apiBaseUrl() + "/.well-known/jwks.json";
     console.log(`Fetching JWKS from ${jwksUrl}`);
     const response = await fetch(jwksUrl);
     if (!response.ok) {

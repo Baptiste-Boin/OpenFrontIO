@@ -30,7 +30,7 @@ COPY scripts ./scripts
 
 ARG GIT_COMMIT=unknown
 ENV GIT_COMMIT="$GIT_COMMIT"
-RUN npm run build-prod
+RUN NODE_OPTIONS=--max-old-space-size=1024 npm run build-prod
 
 # Production dependencies stage - separate from build
 FROM base AS prod-deps

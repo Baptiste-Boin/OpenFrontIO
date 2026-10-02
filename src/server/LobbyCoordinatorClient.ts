@@ -130,7 +130,7 @@ export function coordinatorUrl(site: string | undefined): string | null {
   if (site === undefined || ServerEnv.lobbyCoordinator() !== "api") {
     return null;
   }
-  const base = ServerEnv.jwtIssuer().replace(/^http/, "ws");
+  const base = ServerEnv.apiBaseUrl().replace(/^http/, "ws");
   return `${base}/cluster/lobbies?site=${encodeURIComponent(site)}`;
 }
 

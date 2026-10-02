@@ -2437,5 +2437,8 @@
     "you_won": "You Won!",
     "your_team": "Your team won!",
     "youtube_tutorial": "Need some help?"
+  },
+  "azertix": {
+    "discord_required": "Sign in with Discord to play multiplayer on AzertixYT."
   }
 }

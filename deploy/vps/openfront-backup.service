@@ -1,0 +1,9 @@
+[Unit]
+Description=Back up OpenFront PostgreSQL
+After=docker.service
+ConditionPathExists=/srv/openfront/current/deploy/vps/backup.sh
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /srv/openfront/current/deploy/vps/backup.sh
+TimeoutStartSec=10min
+UMask=0077
