@@ -541,3 +541,230 @@ a:focus-visible {
     padding: 28px 20px;
   }
 }
+
+/* Private room preparation follows the game's visual map/settings picker. */
+.room-configurator {
+  max-width: 1140px;
+  padding: 0;
+}
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px;
+  border-bottom: 1px solid #ffffff18;
+}
+.config-header h2 {
+  margin: 6px 0;
+}
+.config-header p {
+  margin: 0;
+}
+.config-header button {
+  align-self: flex-start;
+}
+.config-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 28px;
+  padding: 24px 28px;
+  align-items: start;
+}
+.config-section {
+  margin-bottom: 28px;
+}
+.config-section h3 {
+  font-size: 16px;
+  margin: 0 0 16px;
+}
+.map-filters {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 16px;
+}
+.config-map-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 4px;
+  scrollbar-gutter: stable;
+}
+.config-map {
+  padding: 0;
+  overflow: hidden;
+  background: #ffffff08;
+  border: 1px solid #ffffff22;
+  text-align: left;
+  color: var(--text);
+}
+.config-map img {
+  width: 100%;
+  height: 75px;
+  object-fit: contain;
+  background: #111c24;
+}
+.config-map span {
+  display: block;
+  padding: 9px;
+  font-size: 12px;
+}
+.config-map[aria-pressed="true"],
+.mode-cards button[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px #398bcd35;
+  background: #398bcd20;
+}
+.mode-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.mode-cards button {
+  text-align: left;
+  background: #ffffff08;
+  color: var(--text);
+  border: 1px solid #ffffff22;
+  padding: 16px;
+}
+.mode-cards strong,
+.mode-cards small {
+  display: block;
+}
+.mode-cards small {
+  margin-top: 6px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.config-preview {
+  position: sticky;
+  top: 0;
+  background: #ffffff06;
+  border: 1px solid #ffffff18;
+  border-radius: 9px;
+  padding: 18px;
+}
+.config-preview img {
+  width: 100%;
+  height: 155px;
+  object-fit: contain;
+  background: #111c24;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+.config-preview h3 {
+  margin: 10px 0;
+}
+.config-preview p {
+  line-height: 1.7;
+}
+.config-preview button {
+  width: 100%;
+}
+.config-note {
+  padding: 16px 0;
+  border-top: 1px solid #ffffff18;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.toggle-grid,
+.unit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 0 20px;
+}
+.setting-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #ffffff05;
+  border: 1px solid #ffffff15;
+  border-radius: 6px;
+  margin: 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+.setting-toggle input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+.setting-toggle strong {
+  font-weight: 500;
+}
+.setting-toggle small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+.advanced-settings {
+  border: 1px solid #ffffff18;
+  padding: 18px;
+  border-radius: 8px;
+}
+.advanced-settings summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.advanced-settings h4 {
+  margin: 20px 0 12px;
+}
+.room-configurator [hidden] {
+  display: none !important;
+}
+.room-configurator button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (max-width: 800px) {
+  .config-layout {
+    grid-template-columns: 1fr;
+    padding: 18px;
+    gap: 12px;
+  }
+  .config-header {
+    padding: 18px;
+  }
+  .config-preview {
+    position: static;
+  }
+  .config-preview img {
+    height: 120px;
+  }
+  .config-map-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .map-filters {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+@media (max-width: 480px) {
+  .config-map-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .toggle-grid,
+  .unit-grid,
+  .mode-cards {
+    grid-template-columns: 1fr;
+  }
+}
+.room-settings {
+  margin: 12px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.room-settings summary {
+  cursor: pointer;
+  color: var(--text);
+}
+.room-settings p {
+  margin: 8px 0;
+}

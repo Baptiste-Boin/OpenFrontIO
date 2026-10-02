@@ -1,6 +1,7 @@
 import { rateLimit } from "express-rate-limit";
 import crypto from "node:crypto";
 import { z } from "zod";
+import { RoomInputSchema, roomGameConfig } from "./room-config.mjs";
 import { cookie, equal, hash, isBanned } from "./security.mjs";
 
 export function registerRooms({
@@ -262,28 +263,8 @@ export function registerRooms({
     admin(),
     rateLimit({ windowMs: 60000, limit: 5 }),
     async (req, res) => {
-      const input = parse(
-        z.object({
-          name: z.string().trim().min(2).max(80),
-          capacity: z.number().int().min(2).max(200).default(20),
-          map: z.enum(["World", "Europe", "France"]).default("World"),
-          bots: z.number().int().min(0).max(400).default(100),
-          nations: z
-            .union([z.literal("disabled"), z.literal("default")])
-            .default("default"),
-        }),
-        req.body,
-      );
-      const config = {
-        gameMap: input.map,
-        gameType: "Private",
-        gameMode: "Free For All",
-        maxPlayers: input.capacity,
-        bots: input.bots,
-        nations: input.nations,
-        listed: false,
-        featured: false,
-      };
+      const input = parse(RoomInputSchema, req.body);
+      const config = roomGameConfig(input);
       const lobby = await game("/api/adminbot/create_game", config);
       const gameId = lobby.gameID ?? lobby.id;
       if (!gameId || !Number.isInteger(lobby.workerIndex))

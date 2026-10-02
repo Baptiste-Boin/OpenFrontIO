@@ -1,0 +1,926 @@
+[
+  {
+    "value": "World",
+    "label": "Monde",
+    "thumbnail": "/maps/world/thumbnail.webp",
+    "categories": ["featured", "world"],
+    "nations": 72
+  },
+  {
+    "value": "Europe",
+    "label": "Europe",
+    "thumbnail": "/maps/europe/thumbnail.webp",
+    "categories": ["featured", "continental", "europe"],
+    "nations": 52
+  },
+  {
+    "value": "North America",
+    "label": "Amérique du Nord",
+    "thumbnail": "/maps/northamerica/thumbnail.webp",
+    "categories": ["featured", "continental", "north_america"],
+    "nations": 71
+  },
+  {
+    "value": "South America",
+    "label": "Amérique du Sud",
+    "thumbnail": "/maps/southamerica/thumbnail.webp",
+    "categories": ["featured", "continental", "south_america"],
+    "nations": 25
+  },
+  {
+    "value": "Asia",
+    "label": "Asie",
+    "thumbnail": "/maps/asia/thumbnail.webp",
+    "categories": ["featured", "continental", "asia"],
+    "nations": 25
+  },
+  {
+    "value": "Africa",
+    "label": "Afrique",
+    "thumbnail": "/maps/africa/thumbnail.webp",
+    "categories": ["featured", "continental", "africa"],
+    "nations": 44
+  },
+  {
+    "value": "Achiran",
+    "label": "Achiran",
+    "thumbnail": "/maps/achiran/thumbnail.webp",
+    "categories": ["fictional", "europe"],
+    "nations": 4
+  },
+  {
+    "value": "Aegean",
+    "label": "Mer Égée",
+    "thumbnail": "/maps/aegean/thumbnail.webp",
+    "categories": ["europe", "asia"],
+    "nations": 29
+  },
+  {
+    "value": "Alps",
+    "label": "Alpes",
+    "thumbnail": "/maps/alps/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 30
+  },
+  {
+    "value": "Amazon River",
+    "label": "Fleuve Amazone",
+    "thumbnail": "/maps/amazonriver/thumbnail.webp",
+    "categories": ["south_america"],
+    "nations": 21
+  },
+  {
+    "value": "Antarctica",
+    "label": "Antarctique",
+    "thumbnail": "/maps/antarctica/thumbnail.webp",
+    "categories": ["antarctica", "continental"],
+    "nations": 30
+  },
+  {
+    "value": "ArchipelagoSea",
+    "label": "Saaristomeri",
+    "thumbnail": "/maps/archipelagosea/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 20
+  },
+  {
+    "value": "Arctic",
+    "label": "Arctique",
+    "thumbnail": "/maps/arctic/thumbnail.webp",
+    "categories": ["europe", "north_america", "asia"],
+    "nations": 44
+  },
+  {
+    "value": "Australia",
+    "label": "Australie",
+    "thumbnail": "/maps/australia/thumbnail.webp",
+    "categories": ["oceania"],
+    "nations": 7
+  },
+  {
+    "value": "Bab el-Mandeb Strait",
+    "label": "Bab el-Mandeb Strait",
+    "thumbnail": "/maps/babelmandebstrait/thumbnail.webp",
+    "categories": ["new", "africa", "asia"],
+    "nations": 26
+  },
+  {
+    "value": "Baikal",
+    "label": "Lac Baïkal",
+    "thumbnail": "/maps/baikal/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 11
+  },
+  {
+    "value": "Baikal Nuke Wars",
+    "label": "Baïkal (Guerres Nucléaires)",
+    "thumbnail": "/maps/baikalnukewars/thumbnail.webp",
+    "categories": ["fictional"],
+    "nations": 0
+  },
+  {
+    "value": "Baja California",
+    "label": "Basse-Californie",
+    "thumbnail": "/maps/bajacalifornia/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 8
+  },
+  {
+    "value": "Balkans",
+    "label": "Balkans",
+    "thumbnail": "/maps/balkans/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 23
+  },
+  {
+    "value": "Balkhash",
+    "label": "Lac Balkhach",
+    "thumbnail": "/maps/balkhash/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 26
+  },
+  {
+    "value": "Baltics",
+    "label": "Terres Baltiques",
+    "thumbnail": "/maps/baltics/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 35
+  },
+  {
+    "value": "Bering Sea",
+    "label": "Mer de Béring",
+    "thumbnail": "/maps/beringsea/thumbnail.webp",
+    "categories": ["asia", "north_america"],
+    "nations": 24
+  },
+  {
+    "value": "Bering Strait",
+    "label": "Détroit de Béring",
+    "thumbnail": "/maps/beringstrait/thumbnail.webp",
+    "categories": ["asia", "north_america"],
+    "nations": 2
+  },
+  {
+    "value": "Between Two Seas",
+    "label": "Entre deux mers",
+    "thumbnail": "/maps/betweentwoseas/thumbnail.webp",
+    "categories": ["europe", "asia"],
+    "nations": 15
+  },
+  {
+    "value": "Black Sea",
+    "label": "Mer Noire",
+    "thumbnail": "/maps/blacksea/thumbnail.webp",
+    "categories": ["europe", "asia"],
+    "nations": 9
+  },
+  {
+    "value": "Bosphorus Straits",
+    "label": "Détroits du Bosphore",
+    "thumbnail": "/maps/bosphorusstraits/thumbnail.webp",
+    "categories": ["europe", "asia"],
+    "nations": 22
+  },
+  {
+    "value": "Branching Paths",
+    "label": "Ramifications",
+    "thumbnail": "/maps/branchingpaths/thumbnail.webp",
+    "categories": ["arcade"],
+    "nations": 19
+  },
+  {
+    "value": "Britannia",
+    "label": "Grande-Bretagne",
+    "thumbnail": "/maps/britannia/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 20
+  },
+  {
+    "value": "Britannia Classic",
+    "label": "Grande-Bretagne (Classique)",
+    "thumbnail": "/maps/britanniaclassic/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 23
+  },
+  {
+    "value": "Canary Islands",
+    "label": "Canary Islands",
+    "thumbnail": "/maps/canaryislands/thumbnail.webp",
+    "categories": ["new", "africa"],
+    "nations": 14
+  },
+  {
+    "value": "Cape Cod",
+    "label": "Cap Cod",
+    "thumbnail": "/maps/capecod/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 31
+  },
+  {
+    "value": "Cape Of Good Hope",
+    "label": "Cape Of Good Hope",
+    "thumbnail": "/maps/capeofgoodhope/thumbnail.webp",
+    "categories": ["new", "africa"],
+    "nations": 26
+  },
+  {
+    "value": "Caribbean",
+    "label": "Caraïbes",
+    "thumbnail": "/maps/caribbean/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 34
+  },
+  {
+    "value": "Caspian Sea",
+    "label": "Mer Caspienne",
+    "thumbnail": "/maps/caspiansea/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 12
+  },
+  {
+    "value": "Caucasus",
+    "label": "Caucase",
+    "thumbnail": "/maps/caucasus/thumbnail.webp",
+    "categories": ["europe", "asia"],
+    "nations": 21
+  },
+  {
+    "value": "Central America",
+    "label": "Amérique Centrale",
+    "thumbnail": "/maps/centralamerica/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 22
+  },
+  {
+    "value": "Channel Islands",
+    "label": "Îles de la Manche",
+    "thumbnail": "/maps/channelislands/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 44
+  },
+  {
+    "value": "China",
+    "label": "Chine de Qing",
+    "thumbnail": "/maps/china/thumbnail.webp",
+    "categories": ["countries", "asia"],
+    "nations": 34
+  },
+  {
+    "value": "Chopping Block",
+    "label": "Carréidoscope",
+    "thumbnail": "/maps/choppingblock/thumbnail.webp",
+    "categories": ["arcade"],
+    "nations": 32
+  },
+  {
+    "value": "Clearwater Lakes",
+    "label": "Lacs Wiyâshâkimî",
+    "thumbnail": "/maps/clearwaterlakes/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 13
+  },
+  {
+    "value": "Conakry",
+    "label": "Conakry",
+    "thumbnail": "/maps/conakry/thumbnail.webp",
+    "categories": ["africa"],
+    "nations": 20
+  },
+  {
+    "value": "Crimea",
+    "label": "Crimée",
+    "thumbnail": "/maps/crimea/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 9
+  },
+  {
+    "value": "Danish Straits",
+    "label": "Détroits Danois",
+    "thumbnail": "/maps/danishstraits/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 26
+  },
+  {
+    "value": "Deglaciated Antarctica",
+    "label": "Antarctique Déglacée",
+    "thumbnail": "/maps/deglaciatedantarctica/thumbnail.webp",
+    "categories": ["antarctica", "fictional"],
+    "nations": 9
+  },
+  {
+    "value": "Didier",
+    "label": "Didier",
+    "thumbnail": "/maps/didier/thumbnail.webp",
+    "categories": ["arcade"],
+    "nations": 12
+  },
+  {
+    "value": "Didier France",
+    "label": "Didier (France)",
+    "thumbnail": "/maps/didierfrance/thumbnail.webp",
+    "categories": ["arcade"],
+    "nations": 42
+  },
+  {
+    "value": "Dyslexdria",
+    "label": "Dyslexdria",
+    "thumbnail": "/maps/dyslexdria/thumbnail.webp",
+    "categories": ["world", "fictional"],
+    "nations": 82
+  },
+  {
+    "value": "East Asia",
+    "label": "Asie de l'Est",
+    "thumbnail": "/maps/eastasia/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 22
+  },
+  {
+    "value": "Europe Classic",
+    "label": "Europe (Classique)",
+    "thumbnail": "/maps/europeclassic/thumbnail.webp",
+    "categories": ["europe", "continental"],
+    "nations": 37
+  },
+  {
+    "value": "Falkland Islands",
+    "label": "Îles Malouines",
+    "thumbnail": "/maps/falklandislands/thumbnail.webp",
+    "categories": ["south_america"],
+    "nations": 12
+  },
+  {
+    "value": "Faroe Islands",
+    "label": "Îles Féroé",
+    "thumbnail": "/maps/faroeislands/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 6
+  },
+  {
+    "value": "Finger Lakes",
+    "label": "Finger Lakes",
+    "thumbnail": "/maps/fingerlakes/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 10
+  },
+  {
+    "value": "Four Islands",
+    "label": "Quatre Îles",
+    "thumbnail": "/maps/fourislands/thumbnail.webp",
+    "categories": ["fictional"],
+    "nations": 4
+  },
+  {
+    "value": "France",
+    "label": "France",
+    "thumbnail": "/maps/france/thumbnail.webp",
+    "categories": ["europe", "countries"],
+    "nations": 25
+  },
+  {
+    "value": "Gateway to the Atlantic",
+    "label": "Porte de l'Atlantique",
+    "thumbnail": "/maps/gatewaytotheatlantic/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 27
+  },
+  {
+    "value": "Germany",
+    "label": "Allemagne",
+    "thumbnail": "/maps/germany/thumbnail.webp",
+    "categories": ["europe", "countries"],
+    "nations": 16
+  },
+  {
+    "value": "Giant World Map",
+    "label": "Carte du monde géante",
+    "thumbnail": "/maps/giantworldmap/thumbnail.webp",
+    "categories": ["world"],
+    "nations": 107
+  },
+  {
+    "value": "Great Lakes",
+    "label": "Grands Lacs",
+    "thumbnail": "/maps/greatlakes/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 34
+  },
+  {
+    "value": "Gulf Of Guinea",
+    "label": "Golfe de Guinée",
+    "thumbnail": "/maps/gulfofguinea/thumbnail.webp",
+    "categories": ["africa"],
+    "nations": 22
+  },
+  {
+    "value": "Gulf Of Mexico",
+    "label": "Golfe du Mexique",
+    "thumbnail": "/maps/gulfofmexico/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 37
+  },
+  {
+    "value": "Gulf of St. Lawrence",
+    "label": "Golfe du Saint-Laurent",
+    "thumbnail": "/maps/gulfofstlawrence/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 26
+  },
+  {
+    "value": "Halkidiki",
+    "label": "Chalcidique",
+    "thumbnail": "/maps/halkidiki/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 8
+  },
+  {
+    "value": "Hawaii",
+    "label": "Hawaï",
+    "thumbnail": "/maps/hawaii/thumbnail.webp",
+    "categories": ["oceania"],
+    "nations": 9
+  },
+  {
+    "value": "Hecate Strait",
+    "label": "Détroit d’Hecate",
+    "thumbnail": "/maps/hecatestrait/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 28
+  },
+  {
+    "value": "Hong Kong",
+    "label": "Hong Kong",
+    "thumbnail": "/maps/hongkong/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 71
+  },
+  {
+    "value": "Horn Of Africa",
+    "label": "Horn Of Africa",
+    "thumbnail": "/maps/hornofafrica/thumbnail.webp",
+    "categories": ["africa", "new"],
+    "nations": 29
+  },
+  {
+    "value": "Iceland",
+    "label": "Islande",
+    "thumbnail": "/maps/iceland/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 8
+  },
+  {
+    "value": "Indian Subcontinent",
+    "label": "Sous-continent Indien",
+    "thumbnail": "/maps/indiansubcontinent/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 52
+  },
+  {
+    "value": "Irish Sea",
+    "label": "Mer d'Irlande",
+    "thumbnail": "/maps/irishsea/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 19
+  },
+  {
+    "value": "Italia",
+    "label": "Italie",
+    "thumbnail": "/maps/italia/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 15
+  },
+  {
+    "value": "Japan",
+    "label": "Japon",
+    "thumbnail": "/maps/japan/thumbnail.webp",
+    "categories": ["countries", "asia"],
+    "nations": 12
+  },
+  {
+    "value": "Juan De Fuca Strait",
+    "label": "Détroit de Juan De Fuca",
+    "thumbnail": "/maps/juandefucastrait/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 16
+  },
+  {
+    "value": "Korea",
+    "label": "Corée",
+    "thumbnail": "/maps/korea/thumbnail.webp",
+    "categories": ["asia", "countries"],
+    "nations": 32
+  },
+  {
+    "value": "Labyrinth",
+    "label": "Labyrinthe",
+    "thumbnail": "/maps/labyrinth/thumbnail.webp",
+    "categories": ["arcade"],
+    "nations": 26
+  },
+  {
+    "value": "Las Vegas Strip",
+    "label": "Strip de Las Vegas",
+    "thumbnail": "/maps/lasvegasstrip/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 34
+  },
+  {
+    "value": "Lemnos",
+    "label": "Lemnos",
+    "thumbnail": "/maps/lemnos/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 9
+  },
+  {
+    "value": "Levant",
+    "label": "Levant",
+    "thumbnail": "/maps/levant/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 15
+  },
+  {
+    "value": "Lisbon",
+    "label": "Lisbonne",
+    "thumbnail": "/maps/lisbon/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 15
+  },
+  {
+    "value": "Los Angeles",
+    "label": "Los Angeles",
+    "thumbnail": "/maps/losangeles/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 26
+  },
+  {
+    "value": "Luna",
+    "label": "Luna",
+    "thumbnail": "/maps/luna/thumbnail.webp",
+    "categories": ["cosmic"],
+    "nations": 25
+  },
+  {
+    "value": "Madagascar",
+    "label": "Madagascar",
+    "thumbnail": "/maps/madagascar/thumbnail.webp",
+    "categories": ["new", "africa"],
+    "nations": 34
+  },
+  {
+    "value": "Manicouagan",
+    "label": "Manicouagan",
+    "thumbnail": "/maps/manicouagan/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 11
+  },
+  {
+    "value": "Mare Nostrum",
+    "label": "Mare Nostrum",
+    "thumbnail": "/maps/marenostrum/thumbnail.webp",
+    "categories": ["europe", "asia", "africa"],
+    "nations": 38
+  },
+  {
+    "value": "Mars",
+    "label": "Mars",
+    "thumbnail": "/maps/mars/thumbnail.webp",
+    "categories": ["cosmic"],
+    "nations": 6
+  },
+  {
+    "value": "Mena",
+    "label": "MOAN",
+    "thumbnail": "/maps/mena/thumbnail.webp",
+    "categories": ["asia", "africa"],
+    "nations": 35
+  },
+  {
+    "value": "Middle East",
+    "label": "Moyen-Orient",
+    "thumbnail": "/maps/middleeast/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 27
+  },
+  {
+    "value": "MilkyWay",
+    "label": "Voie lactée",
+    "thumbnail": "/maps/milkyway/thumbnail.webp",
+    "categories": ["cosmic"],
+    "nations": 18
+  },
+  {
+    "value": "Mississippi River",
+    "label": "Mississippi",
+    "thumbnail": "/maps/mississippiriver/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 11
+  },
+  {
+    "value": "Montreal",
+    "label": "Montréal",
+    "thumbnail": "/maps/montreal/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 12
+  },
+  {
+    "value": "More Than Luck",
+    "label": "Cinq Feuilles",
+    "thumbnail": "/maps/morethanluck/thumbnail.webp",
+    "categories": ["arcade"],
+    "nations": 35
+  },
+  {
+    "value": "New York City",
+    "label": "New York City",
+    "thumbnail": "/maps/newyorkcity/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 20
+  },
+  {
+    "value": "New Zealand",
+    "label": "New Zealand",
+    "thumbnail": "/maps/newzealand/thumbnail.webp",
+    "categories": ["new", "oceania"],
+    "nations": 20
+  },
+  {
+    "value": "Nile Delta",
+    "label": "Delta du Nil",
+    "thumbnail": "/maps/niledelta/thumbnail.webp",
+    "categories": ["africa"],
+    "nations": 11
+  },
+  {
+    "value": "Northwest Passage",
+    "label": "Passage du Nord-Ouest",
+    "thumbnail": "/maps/northwestpassage/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 21
+  },
+  {
+    "value": "Oceania",
+    "label": "Océanie",
+    "thumbnail": "/maps/oceania/thumbnail.webp",
+    "categories": ["oceania", "continental"],
+    "nations": 22
+  },
+  {
+    "value": "Onion",
+    "label": "Oignon",
+    "thumbnail": "/maps/onion/thumbnail.webp",
+    "categories": ["arcade"],
+    "nations": 3
+  },
+  {
+    "value": "Pangaea",
+    "label": "Pangée",
+    "thumbnail": "/maps/pangaea/thumbnail.webp",
+    "categories": ["fictional"],
+    "nations": 29
+  },
+  {
+    "value": "Passage",
+    "label": "Passage",
+    "thumbnail": "/maps/passage/thumbnail.webp",
+    "categories": ["fictional"],
+    "nations": 16
+  },
+  {
+    "value": "Pluto",
+    "label": "Pluton",
+    "thumbnail": "/maps/pluto/thumbnail.webp",
+    "categories": ["cosmic"],
+    "nations": 16
+  },
+  {
+    "value": "Pulicat Lake",
+    "label": "Pulicat Lake",
+    "thumbnail": "/maps/pulicatlake/thumbnail.webp",
+    "categories": ["asia", "new"],
+    "nations": 12
+  },
+  {
+    "value": "Qing China",
+    "label": "Chine de Qing",
+    "thumbnail": "/maps/qingchina/thumbnail.webp",
+    "categories": ["asia", "countries"],
+    "nations": 32
+  },
+  {
+    "value": "Rio de Janeiro",
+    "label": "Rio de Janeiro",
+    "thumbnail": "/maps/riodejaneiro/thumbnail.webp",
+    "categories": ["south_america", "new"],
+    "nations": 30
+  },
+  {
+    "value": "Russia",
+    "label": "Russie",
+    "thumbnail": "/maps/russia/thumbnail.webp",
+    "categories": ["europe", "asia", "countries"],
+    "nations": 82
+  },
+  {
+    "value": "San Francisco",
+    "label": "San Francisco",
+    "thumbnail": "/maps/sanfrancisco/thumbnail.webp",
+    "categories": ["north_america"],
+    "nations": 21
+  },
+  {
+    "value": "Scandinavia",
+    "label": "Scandinavie",
+    "thumbnail": "/maps/scandinavia/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 24
+  },
+  {
+    "value": "Sierpinski",
+    "label": "Sierpinski",
+    "thumbnail": "/maps/sierpinski/thumbnail.webp",
+    "categories": ["arcade"],
+    "nations": 9
+  },
+  {
+    "value": "Sol",
+    "label": "Système solaire",
+    "thumbnail": "/maps/sol/thumbnail.webp",
+    "categories": ["cosmic"],
+    "nations": 53
+  },
+  {
+    "value": "SoutheastAsia",
+    "label": "Asie du Sud-Est",
+    "thumbnail": "/maps/southeastasia/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 31
+  },
+  {
+    "value": "Strait of Gibraltar",
+    "label": "Détroit de Gibraltar",
+    "thumbnail": "/maps/straitofgibraltar/thumbnail.webp",
+    "categories": ["europe", "africa"],
+    "nations": 16
+  },
+  {
+    "value": "Strait of Hormuz",
+    "label": "Détroit d'Ormuz",
+    "thumbnail": "/maps/straitofhormuz/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 21
+  },
+  {
+    "value": "Strait Of Malacca",
+    "label": "Détroit de Malacca",
+    "thumbnail": "/maps/straitofmalacca/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 13
+  },
+  {
+    "value": "Surrounded",
+    "label": "Encerclé",
+    "thumbnail": "/maps/surrounded/thumbnail.webp",
+    "categories": ["fictional"],
+    "nations": 8
+  },
+  {
+    "value": "Svalmel",
+    "label": "Svalmel",
+    "thumbnail": "/maps/svalmel/thumbnail.webp",
+    "categories": ["fictional", "europe", "north_america"],
+    "nations": 5
+  },
+  {
+    "value": "Taiwan Strait",
+    "label": "Détroit de Taïwan",
+    "thumbnail": "/maps/taiwanstrait/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 25
+  },
+  {
+    "value": "The Box",
+    "label": "La boite",
+    "thumbnail": "/maps/thebox/thumbnail.webp",
+    "categories": ["arcade"],
+    "nations": 13
+  },
+  {
+    "value": "Tierra Del Fuego",
+    "label": "Tierra Del Fuego",
+    "thumbnail": "/maps/tierradelfuego/thumbnail.webp",
+    "categories": ["south_america"],
+    "nations": 20
+  },
+  {
+    "value": "Titan",
+    "label": "Titan",
+    "thumbnail": "/maps/titan/thumbnail.webp",
+    "categories": ["cosmic"],
+    "nations": 28
+  },
+  {
+    "value": "Tourney 2 Teams",
+    "label": "Tournoi 2 Équipes",
+    "thumbnail": "/maps/tourney1/thumbnail.webp",
+    "categories": ["tournament"],
+    "nations": 2
+  },
+  {
+    "value": "Tourney 3 Teams",
+    "label": "Tournoi 3 Équipes",
+    "thumbnail": "/maps/tourney2/thumbnail.webp",
+    "categories": ["tournament"],
+    "nations": 3
+  },
+  {
+    "value": "Tourney 4 Teams",
+    "label": "Tournoi 4 Équipes",
+    "thumbnail": "/maps/tourney3/thumbnail.webp",
+    "categories": ["tournament"],
+    "nations": 4
+  },
+  {
+    "value": "Tourney 8 Teams",
+    "label": "Tournoi 8 Équipes",
+    "thumbnail": "/maps/tourney4/thumbnail.webp",
+    "categories": ["tournament"],
+    "nations": 8
+  },
+  {
+    "value": "Traders Dream",
+    "label": "Le rêve d'un commerçant",
+    "thumbnail": "/maps/tradersdream/thumbnail.webp",
+    "categories": ["fictional"],
+    "nations": 13
+  },
+  {
+    "value": "Two Lakes",
+    "label": "Deux Lacs",
+    "thumbnail": "/maps/twolakes/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 5
+  },
+  {
+    "value": "United States",
+    "label": "États-Unis",
+    "thumbnail": "/maps/unitedstates/thumbnail.webp",
+    "categories": ["north_america", "countries"],
+    "nations": 49
+  },
+  {
+    "value": "Vancouver Island",
+    "label": "Vancouver Island",
+    "thumbnail": "/maps/vancouverisland/thumbnail.webp",
+    "categories": ["north_america", "new"],
+    "nations": 32
+  },
+  {
+    "value": "Venice",
+    "label": "Venise",
+    "thumbnail": "/maps/venice/thumbnail.webp",
+    "categories": ["europe"],
+    "nations": 15
+  },
+  {
+    "value": "Vietnam",
+    "label": "Viêt Nam",
+    "thumbnail": "/maps/vietnam/thumbnail.webp",
+    "categories": ["countries", "asia"],
+    "nations": 15
+  },
+  {
+    "value": "Warship Warship",
+    "label": "Warship Warship",
+    "thumbnail": "/maps/warshipwarship/thumbnail.webp",
+    "categories": ["arcade"],
+    "nations": 10
+  },
+  {
+    "value": "World Inverted",
+    "label": "Monde inversé",
+    "thumbnail": "/maps/worldinverted/thumbnail.webp",
+    "categories": ["world", "fictional"],
+    "nations": 93
+  },
+  {
+    "value": "Yangtze River",
+    "label": "Yangtsé",
+    "thumbnail": "/maps/yangtzeriver/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 9
+  },
+  {
+    "value": "Yellow Sea",
+    "label": "Mer Jaune",
+    "thumbnail": "/maps/yellowsea/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 8
+  },
+  {
+    "value": "Yenisei",
+    "label": "Ienisseï",
+    "thumbnail": "/maps/yenisei/thumbnail.webp",
+    "categories": ["asia"],
+    "nations": 6
+  }
+]

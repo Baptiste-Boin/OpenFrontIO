@@ -1,3 +1,4 @@
+import { openRoomConfigurator } from "./room-config.js";
 const nonEmpty = (value, fallback) => (value.length > 0 ? value : fallback);
 const base = "/platform-api";
 const app = document.querySelector("#app");
@@ -290,7 +291,7 @@ async function adminContent(content) {
   if (currentTab === "rooms") {
     const rooms = await api("/admin/rooms");
     const manage = ["SUPER_ADMIN", "TOURNAMENT_ADMIN"].includes(me.role);
-    content.innerHTML = `<div class="row spread section-heading"><h2>Mes salons</h2>${manage ? button("+ Créer un salon", "room-create", false) : ""}</div>${rooms.length ? `<div class="grid rooms-grid">${rooms.map((r) => `<article class="card room-card"><div class="row spread"><h3>${esc(r.name)}</h3>${pill(r.status)}</div><p class="muted">${esc(r.config.gameMap)} · ${r.registered} / ${r.capacity} joueurs inscrits</p><div class="room-code"><span>Code à partager</span><strong>${esc(r.code)}</strong><div class="row">${button("Copier le code", `copy-code:${r.code}`)}${button("Copier le lien", `copy-link:${r.code}`)}</div></div><div class="row room-actions"><a class="button secondary small" href="/game/${esc(r.game_id)}">Jouer</a>${["lobby", "running", "paused"].includes(r.status) ? button("Voir les joueurs", `room-players:${r.id}`) : ""}${manage && r.status === "lobby" ? button("Démarrer", `room-action:${r.id}:start`, false) : ""}${manage && r.status === "running" ? button("Pause", `room-action:${r.id}:pause`) : ""}${manage && r.status === "paused" ? button("Reprendre", `room-action:${r.id}:resume`, false) : ""}${manage && ["lobby", "running", "paused"].includes(r.status) ? button("Fermer", `room-action:${r.id}:cancel`) : ""}</div></article>`).join("")}</div>` : `<div class="empty"><h3>Ton premier salon</h3><p>Choisis une carte, crée le salon, puis donne le code aux joueurs.</p>${manage ? button("Créer un salon", "room-create", false) : ""}</div>`}`;
+    content.innerHTML = `<div class="row spread section-heading"><h2>Mes salons</h2>${manage ? button("+ Créer un salon", "room-create", false) : ""}</div>${rooms.length ? `<div class="grid rooms-grid">${rooms.map((r) => `<article class="card room-card"><div class="row spread"><h3>${esc(r.name)}</h3>${pill(r.status)}</div><p class="muted">${esc(r.config.gameMap)} · ${r.config.gameMode === "Team" ? "Équipes · " + esc(r.config.playerTeams) : "Chacun pour soi"} · ${r.registered} / ${r.capacity} joueurs inscrits</p>${roomSettings(r.config)}<div class="room-code"><span>Code à partager</span><strong>${esc(r.code)}</strong><div class="row">${button("Copier le code", `copy-code:${r.code}`)}${button("Copier le lien", `copy-link:${r.code}`)}</div></div><div class="row room-actions"><a class="button secondary small" href="/game/${esc(r.game_id)}">Jouer</a>${["lobby", "running", "paused"].includes(r.status) ? button("Voir les joueurs", `room-players:${r.id}`) : ""}${manage && r.status === "lobby" ? button("Démarrer", `room-action:${r.id}:start`, false) : ""}${manage && r.status === "running" ? button("Pause", `room-action:${r.id}:pause`) : ""}${manage && r.status === "paused" ? button("Reprendre", `room-action:${r.id}:resume`, false) : ""}${manage && ["lobby", "running", "paused"].includes(r.status) ? button("Fermer", `room-action:${r.id}:cancel`) : ""}</div></article>`).join("")}</div>` : `<div class="empty"><h3>Ton premier salon</h3><p>Choisis une carte, crée le salon, puis donne le code aux joueurs.</p>${manage ? button("Créer un salon", "room-create", false) : ""}</div>`}`;
   }
   if (currentTab === "live") {
     const data = await api("/admin/live");
@@ -376,6 +377,34 @@ async function adminContent(content) {
     b.onclick = () =>
       doAction(b.dataset.action).catch((e) => notice(e.message));
 }
+function roomSettings(c) {
+  const difficulty = {
+    Easy: "Facile",
+    Medium: "Moyenne",
+    Hard: "Difficile",
+    Impossible: "Impossible",
+  };
+  const teams = {
+    Duos: "Duos",
+    Trios: "Trios",
+    Quads: "Escouades",
+    "Humans Vs Nations": "Humains contre nations",
+  };
+  const mode =
+    c.gameMode === "Team"
+      ? (teams[c.playerTeams] ?? `${c.playerTeams} équipes`)
+      : "Chacun pour soi";
+  const options = [
+    [c.randomSpawn, "Apparition aléatoire"],
+    [c.infiniteGold, "Or illimité"],
+    [c.infiniteTroops, "Troupes illimitées"],
+    [c.instantBuild, "Construction instantanée"],
+    [c.waterNukes, "Nucléaire sur l’eau"],
+  ]
+    .filter(([enabled]) => enabled)
+    .map(([, label]) => label);
+  return `<details class="room-settings"><summary>Réglages de la partie</summary><p>${esc(mode)} · ${esc(difficulty[c.difficulty] ?? "Facile")} · ${c.gameMapSize === "Compact" ? "Terrain compact" : "Terrain normal"}</p><p>${esc(c.bots)} bots · Nations : ${esc(c.nations === "disabled" ? "désactivées" : c.nations === "default" ? "celles de la carte" : c.nations)}</p><p>Or : ×${esc(c.goldMultiplier ?? 1)} · Départ : ${esc(c.startingGold ?? 0)}</p>${options.length ? `<p>${esc(options.join(" · "))}</p>` : ""}${c.maxTimerValue ? `<p>Durée maximale : ${esc(c.maxTimerValue)} minutes</p>` : ""}${c.customAllianceDuration !== null && c.customAllianceDuration !== undefined ? `<p>Alliances : ${esc(c.customAllianceDuration)} minutes</p>` : ""}${c.doomsdayClock?.enabled ? `<p>Horloge : ${esc(c.doomsdayClock.speed)}</p>` : ""}${c.overtime?.enabled ? `<p>Prolongations après ${esc(c.overtime.startMinutes)} minutes</p>` : ""}${c.disabledUnits?.length ? `<p>Unités désactivées : ${esc(c.disabledUnits.join(", "))}</p>` : ""}</details>`;
+}
 async function loadUsers(target, q) {
   const users = await api("/admin/users?q=" + encodeURIComponent(q));
   target.innerHTML = table(
@@ -405,18 +434,11 @@ async function doAction(action) {
     return;
   }
   if (type === "room-create") {
-    dialog(
-      "Créer un salon",
-      '<label>Nom du salon<input name="name" required minlength="2" maxlength="80" placeholder="Partie de la communauté"></label><div class="fields"><label>Carte<select name="map"><option value="World">Monde</option><option value="Europe">Europe</option><option value="France">France</option></select></label><label>Places<input name="capacity" type="number" min="2" max="200" value="20" required></label><label>Tribus (bots)<input name="bots" type="number" min="0" max="400" value="100" required></label><label>Nations<select name="nations"><option value="default">Nations de la carte</option><option value="disabled">Désactivées</option></select></label></div><p class="form-help">Le salon reste privé. Les joueurs entrent ton code et tu démarres la partie quand ils sont prêts.</p>',
-      (data) =>
-        api("/admin/rooms", {
-          name: data.get("name"),
-          capacity: Number(data.get("capacity")),
-          map: data.get("map"),
-          bots: Number(data.get("bots")),
-          nations: data.get("nations"),
-        }),
-    );
+    await openRoomConfigurator({
+      create: (settings) => api("/admin/rooms", settings),
+      onCreated: renderAdmin,
+      notice,
+    });
     return;
   }
   if (type === "room-action") {
