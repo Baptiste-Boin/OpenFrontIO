@@ -33,6 +33,9 @@ manches, résultats automatiques, classement, audit et bot Discord optionnel.
 
 Les mises à jour automatiques lisent **main** toutes les 30 minutes. Elles
 attendent que la PR déployée soit fusionnée avant de remplacer cette version.
+Après succès, seuls les worktrees et images OpenFront de la version active et
+de la précédente sont conservés. Aucun volume, dump ou artefact Tralo n’est
+supprimé ; les sources supprimées restent récupérables depuis GitHub.
 Aucune PR n’est fusionnée par le VPS. Le déploiement refuse une évolution de
 main qui ne descend pas de la version active. Un SHA explicite permet un
 retour arrière. Les migrations présentes sont additives ; un futur changement

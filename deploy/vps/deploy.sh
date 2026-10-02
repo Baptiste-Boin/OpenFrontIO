@@ -68,4 +68,13 @@ printf '%s\n' "$sha" > "$root/current-sha.new"
 mv "$root/current-sha.new" "$root/current-sha"
 ln -sfn "$release" "$root/current"
 trap - ERR
+# Retain the active and previous versions only. Images/source worktrees are
+# reproducible from GitHub; backups and database volumes are never removed.
+for candidate in "$root"/releases/*; do
+    obsolete=${candidate##*/}
+    [[ $obsolete =~ ^[a-f0-9]{40}$ && $obsolete != "$sha" && $obsolete != "$previous" ]] || continue
+    # No force: a container using an image or a modified worktree prevents removal.
+    docker image rm "azertix-openfront:$obsolete" "azertix-platform:$obsolete" > /dev/null 2>&1 || true
+    git -C "$repo" worktree remove "$candidate" > /dev/null 2>&1 || true
+done
 printf 'OpenFront deployed from GitHub: %s\n' "$sha"
