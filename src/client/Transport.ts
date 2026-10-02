@@ -727,7 +727,7 @@ export class Transport {
       gameID: this.lobbyConfig.gameID,
       // Note: clientID is not sent - server looks it up from persistentID in token
       lastTurn: lastTurn,
-      token: await getPlayToken(),
+      token: await getPlayToken(this.isLocal),
       gitCommit: ClientEnv.gitCommit(),
     } satisfies ClientRejoinMessage);
   }
