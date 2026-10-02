@@ -131,6 +131,31 @@ try {
     ).status,
     204,
   );
+  const oldGameId = match.gameId;
+  const restarted = await request(
+    `/admin/matches/${match.id}/restart`,
+    {},
+    admin.token,
+  );
+  assert.equal(restarted.status, 201);
+  assert.notEqual(restarted.data.gameId, match.gameId);
+  match = restarted.data;
+  await db.query("DELETE FROM archives WHERE game_id=$1", [oldGameId]);
+  assert.equal(
+    (await request(`/admin/matches/${match.id}/restart`, {}, admin.token))
+      .status,
+    409,
+  );
+  assert.equal(
+    (
+      await request(
+        `/admin/matches/${match.id}/action`,
+        { action: "cancel" },
+        admin.token,
+      )
+    ).status,
+    204,
+  );
   // A second test match reuses the tournament only to test scoring receipt.
   await db.query("UPDATE matches SET status='running' WHERE id=$1", [match.id]);
   const record = {
@@ -163,6 +188,29 @@ try {
     )
   ).rows[0];
   assert.deepEqual(results, { count: 2, points: 11, wins: 1 });
+  const history = await request("/me/history", undefined, player.token);
+  assert.equal(history.status, 200);
+  assert.equal(history.data[0].points, 10);
+  assert.equal(
+    (
+      await request(
+        `/admin/users/${player.publicId}/history`,
+        undefined,
+        admin.token,
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (
+      await request(
+        `/admin/users/${player.publicId}/history`,
+        undefined,
+        player.token,
+      )
+    ).status,
+    403,
+  );
   const archive = await request(`/game/${match.gameId}`);
   assert.equal(archive.status, 200);
   assert.equal(archive.data.info.players[0].persistentID, undefined);
@@ -201,7 +249,7 @@ try {
   console.log(
     JSON.stringify({
       status: "passed",
-      checks: 20,
+      checks: 25,
       covered: [
         "session authentication",
         "roles",

@@ -386,6 +386,19 @@ app.post("/auth/logout", csrf, async (req, res) => {
   sessionCookie(res, "", true);
   res.sendStatus(204);
 });
+async function historyFor(userId) {
+  return (
+    await db.query(
+      `SELECT r.game_id,r.points,r.winner,m.created_at,t.name,m.round
+    FROM results r JOIN tournaments t ON t.id=r.tournament_id
+    LEFT JOIN matches m ON m.game_id=r.game_id WHERE r.user_id=$1 ORDER BY m.created_at DESC LIMIT 100`,
+      [userId],
+    )
+  ).rows;
+}
+app.get("/me/history", auth, async (req, res) =>
+  res.json(await historyFor(req.user.id)),
+);
 app.get("/me", auth, async (req, res) => {
   const { id, public_id, discord_id, username, avatar, role, created_at } =
     req.user;
@@ -705,6 +718,48 @@ app.get(
       ).rows,
     ),
 );
+// Recreate a cancelled round with a new engine lobby, without erasing scored games.
+app.post("/admin/matches/:id/restart", admin(), async (req, res) => {
+  const id = parse(uuid, req.params.id);
+  const match = await transaction(async (client) => {
+    const m = (
+      await client.query("SELECT * FROM matches WHERE id=$1 FOR UPDATE", [id])
+    ).rows[0];
+    if (!m || m.status !== "cancelled")
+      throw fail(409, "Annuler la manche avant de la recréer");
+    const t = (
+      await client.query(
+        "SELECT status FROM tournaments WHERE id=$1 FOR UPDATE",
+        [m.tournament_id],
+      )
+    ).rows[0];
+    if (t?.status !== "running")
+      throw fail(409, "Le tournoi doit être en cours");
+    if (
+      (
+        await client.query(
+          "SELECT 1 FROM matches WHERE tournament_id=$1 AND round>$2",
+          [m.tournament_id, m.round],
+        )
+      ).rowCount
+    )
+      throw fail(409, "Une manche suivante existe déjà");
+    const lobby = await game("/api/adminbot/create_game", m.config);
+    const gameId = lobby.gameID ?? lobby.id;
+    if (!gameId || !Number.isInteger(lobby.workerIndex))
+      throw fail(502, "Réponse du jeu invalide");
+    await client.query(
+      "UPDATE matches SET game_id=$1,worker=$2,status='lobby' WHERE id=$3",
+      [gameId, lobby.workerIndex, id],
+    );
+    await audit(client, req.user, "restart_match", gameId);
+    await client.query("INSERT INTO announcements(content) VALUES($1)", [
+      `🎮 Manche ${m.round} recréée\n${origin}/?gameID=${gameId}`,
+    ]);
+    return { id, gameId, round: m.round };
+  });
+  res.status(201).json(match);
+});
 app.post("/admin/matches/:id/action", admin(), async (req, res) => {
   const id = parse(uuid, req.params.id);
   const input = parse(
@@ -783,6 +838,18 @@ app.get(
         )
       ).rows,
     );
+  },
+);
+app.get(
+  "/admin/users/:id/history",
+  admin(["MODERATOR", "TOURNAMENT_ADMIN", "SUPER_ADMIN"]),
+  async (req, res) => {
+    const id = parse(uuid, req.params.id);
+    const user = (
+      await db.query("SELECT id,username FROM users WHERE public_id=$1", [id])
+    ).rows[0];
+    if (!user) throw fail(404, "Joueur absent");
+    res.json({ username: user.username, history: await historyFor(user.id) });
   },
 );
 app.post(

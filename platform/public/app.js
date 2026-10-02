@@ -163,6 +163,15 @@ async function showTournament(id) {
 function login() {
   app.innerHTML = `<section class="card login">${hero("Ta communauté. Ton terrain.", "Connecte ton compte Discord pour participer aux tournois, suivre tes résultats et retrouver ton profil.", "BIENVENUE")}<p class="muted">La participation est réservée aux membres du serveur Discord AzertixYT.</p>${config.discordReady ? '<a class="button" href="/platform-api/auth/login/discord">Se connecter avec Discord →</a>' : '<p class="pill">Connexion bientôt disponible</p><p class="muted">L’application Discord doit encore être configurée par l’administrateur.</p>'}<p><a class="muted" href="/">Continuer vers le jeu →</a></p></section>`;
 }
+function historyTable(rows) {
+  return table(
+    ["Tournoi", "Manche", "Résultat", "Points", "Date"],
+    rows.map(
+      (r) =>
+        `<tr><td>${esc(r.name)}</td><td>${esc(r.round ?? "—")}</td><td>${r.winner ? "Victoire" : "Participation"}</td><td>${r.points}</td><td>${date(r.created_at)}</td></tr>`,
+    ),
+  );
+}
 async function profile() {
   if (!me) {
     login();
@@ -186,6 +195,10 @@ async function profile() {
       .join(
         "",
       )}</div><div class="card"><h2>Compte Discord</h2><p>ID Discord : <code>${esc(me.discordId)}</code></p><p class="muted">Membre depuis le ${date(me.createdAt)}</p><button class="secondary" id="logout">Se déconnecter</button></div>`;
+  app.insertAdjacentHTML(
+    "beforeend",
+    `<div class="card"><h2>Historique des manches</h2>${historyTable(await api("/me/history"))}</div>`,
+  );
   $("#logout").onclick = async () => {
     await api("/auth/logout", {});
     location.href = "/login";
@@ -287,7 +300,7 @@ async function adminContent(content) {
   }
   if (currentTab === "matches") {
     const data = await api("/admin/matches");
-    content.innerHTML = `<h2>Parties de tournoi</h2>${nonEmpty(data.map((m) => `<div class="card"><div class="row spread"><h3>${esc(m.name)} · Manche ${m.round}</h3>${pill(m.status)}</div><p class="muted">Code <code>${esc(m.game_id)}</code></p><div class="row"><a class="button small secondary" href="/?gameID=${esc(m.game_id)}">Ouvrir le lobby</a>${button("Joueurs", `roster:${m.id}`)}${m.status === "lobby" ? button("Démarrer", `action:${m.id}:start`) : ""}${m.status === "running" ? button("Mettre en pause", `action:${m.id}:pause`) : ""}${m.status === "paused" ? button("Reprendre", `action:${m.id}:resume`) : ""}${!["finished", "cancelled"].includes(m.status) ? button("Annuler", `action:${m.id}:cancel`) : ""}</div></div>`).join(""), empty("Crée une manche depuis un tournoi en cours."))}`;
+    content.innerHTML = `<h2>Parties de tournoi</h2>${nonEmpty(data.map((m) => `<div class="card"><div class="row spread"><h3>${esc(m.name)} · Manche ${m.round}</h3>${pill(m.status)}</div><p class="muted">Code <code>${esc(m.game_id)}</code></p><div class="row"><a class="button small secondary" href="/?gameID=${esc(m.game_id)}">Ouvrir le lobby</a>${button("Joueurs", `roster:${m.id}`)}${m.status === "cancelled" ? button("Recréer cette manche", `restart:${m.id}`) : ""}${m.status === "lobby" ? button("Démarrer", `action:${m.id}:start`) : ""}${m.status === "running" ? button("Mettre en pause", `action:${m.id}:pause`) : ""}${m.status === "paused" ? button("Reprendre", `action:${m.id}:resume`) : ""}${!["finished", "cancelled"].includes(m.status) ? button("Annuler", `action:${m.id}:cancel`) : ""}</div></div>`).join(""), empty("Crée une manche depuis un tournoi en cours."))}`;
   }
   if (currentTab === "users") {
     content.innerHTML =
@@ -328,7 +341,7 @@ async function loadUsers(target, q) {
     ["Joueur", "Discord", "Rôle", "Modération"],
     users.map(
       (u) =>
-        `<tr><td>${esc(u.username)}</td><td>${esc(u.discord_id)}</td><td>${esc(u.role)} ${me.role === "SUPER_ADMIN" ? button("Modifier", `role:${u.public_id}`) : ""}</td><td>${button(u.banned ? "Lever le ban" : "Bannir", `ban:${u.public_id}:${u.banned ? "false" : "true"}`)}</td></tr>`,
+        `<tr><td>${esc(u.username)} ${button("Historique", `history:${u.public_id}`)}</td><td>${esc(u.discord_id)}</td><td>${esc(u.role)} ${me.role === "SUPER_ADMIN" ? button("Modifier", `role:${u.public_id}`) : ""}</td><td>${button(u.banned ? "Lever le ban" : "Bannir", `ban:${u.public_id}:${u.banned ? "false" : "true"}`)}</td></tr>`,
     ),
   );
   for (const b of target.querySelectorAll("[data-action]"))
@@ -358,6 +371,23 @@ async function doAction(action) {
           },
         });
       },
+    );
+    return;
+  }
+  if (type === "history") {
+    const data = await api(`/admin/users/${id}/history`);
+    dialog(
+      `Historique de ${data.username}`,
+      historyTable(data.history),
+      async () => {},
+    );
+    return;
+  }
+  if (type === "restart") {
+    dialog(
+      "Recréer cette manche",
+      "<p>Un nouveau code de lobby sera généré pour cette manche annulée.</p>",
+      () => api(`/admin/matches/${id}/restart`, {}),
     );
     return;
   }
