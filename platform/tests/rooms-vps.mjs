@@ -9,6 +9,7 @@ import {
   createGameWireContext,
   decodeServerMessage,
   encodeClientMessage,
+  UserMeResponseSchema,
 } from "/tmp/code-room-wire.mjs";
 const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const origin = process.env.APP_URL,
@@ -193,6 +194,11 @@ try {
     );
     eq(ticket.status, 200);
     players[i].jwt = ticket.data.jwt;
+    const bridge = await request("/users/@me", undefined, "", true, {
+      Authorization: "Bearer " + ticket.data.jwt,
+    });
+    eq(bridge.status, 200);
+    eq(UserMeResponseSchema.safeParse(bridge.data).success, true);
     const key = await importSPKI(
       Buffer.from(process.env.JWT_PUBLIC_KEY, "base64").toString(),
       "EdDSA",

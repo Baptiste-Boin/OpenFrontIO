@@ -467,7 +467,9 @@ app.get("/users/@me", async (req, res) => {
       adfree: true,
       unlimitedRanked: false,
       canCreatePublicLobbies: false,
-      trustTier: user ? "trusted" : "untrusted",
+      trustTier:
+        user && user.auth_provider !== "guest" ? "trusted" : "untrusted",
+      subscription: null,
       flares: [],
       friends: [],
       achievements: { singleplayerMap: [], player: [] },

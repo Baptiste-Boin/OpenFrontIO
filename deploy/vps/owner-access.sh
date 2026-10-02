@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 umask 077
-[[ $(id -u) == 0 ]] || { echo 'Run with sudo.' >&2; exit 1; }
-exec 9>/srv/openfront/deploy.lock
-flock -n 9 || { echo 'A deployment is running.' >&2; exit 1; }
-python3 - <<'PY'
+[[ $(id -u) == 0 ]] || {
+    echo 'Run with sudo.' >&2
+    exit 1
+}
+exec 9> /srv/openfront/deploy.lock
+flock -n 9 || {
+    echo 'A deployment is running.' >&2
+    exit 1
+}
+python3 - << 'PY'
 from pathlib import Path
 import hashlib, os, secrets, shutil, time
 root = Path('/srv/openfront')
