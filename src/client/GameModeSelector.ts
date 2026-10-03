@@ -714,6 +714,11 @@ export class GameModeSelector extends LitElement {
         </div>
       </form>
       <a
+        href="/platform-api/auth/login/discord"
+        class="bg-[#5865F2] hover:bg-[#4752C4] rounded-lg p-4 text-white text-center font-medium"
+        >${translateText("azertix.discord_login")}</a
+      >
+      <a
         href="/admin"
         class="text-sm text-white/60 hover:text-white text-center py-2"
         >${translateText("azertix.organizer")}</a

@@ -69,6 +69,9 @@ export class MobileNavBar extends LitElement {
         <a href="/" class="text-malibu-blue font-bold">AzertixYT · OpenFront</a>
         <a href="/">Jouer</a><a href="/tournaments">Tournois et classement</a>
         <a href="/profile">Mon profil</a><a href="/admin">Administration</a>
+        <a href="/platform-api/auth/login/discord" class="text-malibu-blue"
+          >Connexion Discord</a
+        >
         <nav-utility-icons size="mobile"></nav-utility-icons>
       </nav>`;
     window.currentPageId ??= "page-play";

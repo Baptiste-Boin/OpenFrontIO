@@ -5,6 +5,14 @@
     "native": "Français",
     "svg": "fr"
   },
+  "azertix": {
+    "code_help": "Entre le code partagé par l’organisateur. Tu peux aussi jouer sans compte Discord.",
+    "code_required": "Entre le code du salon fourni par l’organisateur pour rejoindre cette partie.",
+    "discord_login": "Se connecter avec Discord",
+    "discord_required": "Connecte-toi avec Discord pour jouer en multijoueur sur AzertixYT.",
+    "organizer": "Organisateur · Créer et gérer les salons",
+    "room_code": "Code du salon"
+  },
   "account_modal": {
     "cancel_subscription": "Annuler",
     "cancel_subscription_confirm": "Résilier votre abonnement ? Vous pourriez perdre l'accès immédiatement.",
