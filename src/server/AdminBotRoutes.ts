@@ -242,8 +242,16 @@ export function registerAdminBotRoutes(opts: {
   gm: GameManager;
   workerId: number;
   log: Logger;
+  webSocketCount?: () => number;
 }) {
   const { app, gm, workerId, log } = opts;
+  app.get("/api/adminbot/live", requireAdminBotKey, (_req, res) => {
+    res.json({
+      games: gm.activeGames(),
+      players: gm.activeClients(),
+      webSockets: opts.webSocketCount?.() ?? null,
+    });
+  });
 
   // Validate game id format and that this worker owns it. Returns false and
   // sends the error response when the id is bad/misrouted.
@@ -443,6 +451,20 @@ export function registerAdminBotRoutes(opts: {
     });
     res.json({ teams: result.teams });
   });
+
+  app.post(
+    "/api/adminbot/game/:id/cancel",
+    requireAdminBotKey,
+    async (req, res) => {
+      const id = req.params.id as string;
+      if (!ownsGame(id, res)) return;
+      const game = gm.game(id);
+      if (game === null)
+        return res.status(404).json({ error: "Game not found" });
+      await game.end();
+      res.json({ gameID: id, cancelled: true });
+    },
+  );
 
   app.post("/api/adminbot/game/:id/intent", requireAdminBotKey, (req, res) => {
     const id = req.params.id as string;

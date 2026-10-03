@@ -6,7 +6,11 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
+    <% if (typeof platformApiBase !== "undefined" && platformApiBase) { %>
+    <title>AzertixYT · OpenFront</title>
+    <% } else { %>
     <title data-i18n="main.title">OpenFront (ALPHA)</title>
+    <% } %>
     <link rel="manifest" href="<%- manifestHref %>" />
     <link rel="icon" type="image/svg+xml" href="<%- faviconHref %>" />
 
@@ -135,15 +139,24 @@
     </style>
 
     <!-- SEO -->
-    <link rel="canonical" href="https://openfront.io/" />
+    <link
+      rel="canonical"
+      href="<%- typeof platformOrigin !== 'undefined' && platformOrigin ? platformOrigin + '/' : 'https://openfront.io/' %>"
+    />
     <meta
       name="description"
       content="Conquer the world in this multiplayer battle royale! Expand your nation, eliminate opponents, and dominate the map in this fast-paced IO game."
     />
 
     <!-- Open Graph -->
-    <meta property="og:url" content="https://openfront.io/" />
-    <meta property="og:title" content="OpenFront - Battle Royale" />
+    <meta
+      property="og:url"
+      content="<%- typeof platformOrigin !== 'undefined' && platformOrigin ? platformOrigin + '/' : 'https://openfront.io/' %>"
+    />
+    <meta
+      property="og:title"
+      content="<%- typeof platformApiBase !== 'undefined' && platformApiBase ? 'AzertixYT · OpenFront' : 'OpenFront - Battle Royale' %>"
+    />
     <meta
       property="og:description"
       content="Conquer the world in this multiplayer battle royale! Expand your nation, eliminate opponents, and dominate the map in this fast-paced IO game."
@@ -175,7 +188,7 @@
         gameEnv: <%- gameEnv %>,<%- typeof cluster !== "undefined" && cluster ? "\n        cluster: " + cluster + "," : "" %><%- typeof instanceLetter !== "undefined" && instanceLetter ? "\n        instanceLetter: " + instanceLetter + "," : "" %>
         turnstileSiteKey: <%- turnstileSiteKey %>,
         jwtAudience: <%- jwtAudience %>,<%- typeof stripePublishableKey !== "undefined" && stripePublishableKey ? "\n        stripePublishableKey: " + stripePublishableKey + "," : "" %><%- typeof faroCollectorUrl !== "undefined" && faroCollectorUrl ? "\n        faroCollectorUrl: " + faroCollectorUrl + "," : "" %><%- typeof instanceId !== "undefined" && instanceId ? "\n        instanceId: " + instanceId + "," : "" %><%- typeof serverHost !== "undefined" && serverHost ? "\n        serverHost: " + serverHost + "," : "" %><%- typeof siteHost !== "undefined" && siteHost ? "\n        siteHost: " + siteHost + "," : "" %>
-      };
+      };<%- typeof platformApiBase !== "undefined" && platformApiBase ? "\n      window.BOOTSTRAP_CONFIG.platformApiBase = " + platformApiBase + ";" : "" %>
       // Set here rather than from the bundle so the first paint already has the
       // desktop layout. The shell's preload defines openfrontDesktop before
       // any page script runs. ?desktop-layout previews it outside prod.
@@ -200,6 +213,7 @@
       );
     </script>
 
+    <% if (typeof platformApiBase === "undefined" || !platformApiBase) { %>
     <!-- CrazyGames SDK -->
     <script
       src="https://sdk.crazygames.com/crazygames-sdk-v3.js"
@@ -255,6 +269,17 @@
 
       gtag("config", "G-WQGQQ8RDN4");
     </script>
+    <% } else { %>
+    <style>
+      .ad,
+      homepage-promos,
+      marketing-consent-toast,
+      purchase-nudge-modal,
+      nav-account-menu {
+        display: none !important;
+      }
+    </style>
+    <% } %>
   </head>
 
   <body

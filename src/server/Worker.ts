@@ -40,6 +40,7 @@ import { resolveVerifiedJoin } from "./Privilege";
 
 import { MapPlaylist } from "./MapPlaylist";
 import { setNoStoreHeaders } from "./NoStoreHeaders";
+import { platformJoinAllowed } from "./PlatformJoin";
 import { PrivilegeRefresher } from "./PrivilegeRefresher";
 import { startRankedCheckinLoops } from "./RankedCheckin";
 import { rejoinOrClose } from "./Rejoin";
@@ -92,6 +93,7 @@ export async function startWorker() {
       // The ranked loop follows the deployment-active flag the master pushes
       // to this worker (OPE-469): a draining, standby or fenced server keeps
       // the games it has but stops offering new matches.
+      if (ServerEnv.platformAuth()) return;
       startRankedCheckinLoops({
         gm,
         playlist,
@@ -108,9 +110,9 @@ export async function startWorker() {
   }
 
   const privilegeRefresher = new PrivilegeRefresher(
-    ServerEnv.jwtIssuer() + "/cosmetics.json",
+    ServerEnv.apiBaseUrl() + "/cosmetics.json",
     ServerEnv.apiKey(),
-    ServerEnv.jwtIssuer() + "/reserved_clan_tags",
+    ServerEnv.apiBaseUrl() + "/reserved_clan_tags",
     log,
   );
   privilegeRefresher.start();
@@ -180,6 +182,13 @@ export async function startWorker() {
       return res.status(401).json({ error: "Invalid creator token" });
     }
     const creatorPersistentID = auth.persistentId;
+    if (
+      ServerEnv.platformAuth() &&
+      !["root", "admin"].includes(auth.claims?.role ?? "")
+    )
+      return res
+        .status(403)
+        .json({ error: "Only the organizer can create rooms" });
 
     const parsed = CreateGameInputSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -470,7 +479,13 @@ export async function startWorker() {
     baseDir: __dirname,
   });
 
-  registerAdminBotRoutes({ app, gm, workerId, log });
+  registerAdminBotRoutes({
+    app,
+    gm,
+    workerId,
+    log,
+    webSocketCount: () => wss.clients.size,
+  });
 
   // WebSocket handling
   wss.on("connection", (ws: WebSocket, req) => {
@@ -569,6 +584,20 @@ export async function startWorker() {
           return;
         }
         const { persistentId, claims } = result;
+        if (
+          ServerEnv.platformAuth() &&
+          !platformJoinAllowed(
+            claims,
+            clientMsg.gameID,
+            Boolean(
+              gm.game(clientMsg.gameID)?.gameInfo().gameConfig?.allowedPublicIds
+                ?.length,
+            ),
+          )
+        ) {
+          ws.close(CloseCode.Unauthorized, CloseReason.InvalidToken);
+          return;
+        }
 
         if (claims?.role === "banned") {
           ws.close(CloseCode.Banned, CloseReason.Banned);
@@ -619,7 +648,14 @@ export async function startWorker() {
           const game = gm.game(clientMsg.gameID);
           const stored = game?.storedIdentity(persistentId) ?? null;
           const isReadmit = game?.wasAdmitted(persistentId) ?? false;
-          const steamAuthed = isSteamAuthenticated(claims);
+          const steamAuthed =
+            isSteamAuthenticated(claims) ||
+            (ServerEnv.platformAuth() &&
+              platformJoinAllowed(
+                claims,
+                clientMsg.gameID,
+                Boolean(game?.gameInfo().gameConfig?.allowedPublicIds?.length),
+              ));
           // SECURITY: the reject/skip/verify split (first joins must
           // present a token, only re-admits may omit it) lives in
           // planJoinVerify — see its doc comment. Steam-authenticated first

@@ -37,7 +37,8 @@
     "lint:eslint": "eslint",
     "lint:eslint:fix": "eslint --fix",
     "prepare": "husky",
-    "gen-maps": "cd map-generator && go run . && npm run format",
+    "gen-maps": "cd map-generator && go run . && cd .. && npm run gen-platform-maps && npm run format",
+    "gen-platform-maps": "tsx scripts/buildPlatformCatalog.ts",
     "inst": "npm ci --ignore-scripts"
   },
   "lint-staged": {

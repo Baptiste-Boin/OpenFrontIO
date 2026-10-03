@@ -30,6 +30,18 @@ export class Footer extends LitElement {
   }
 
   render() {
+    if (window.BOOTSTRAP_CONFIG?.platformApiBase)
+      return html` <footer
+        class="[.in-game_&]:hidden bg-zinc-900/90 text-white/60 flex flex-col gap-2 items-center py-4 relative"
+      >
+        <span>AzertixYT · Fork communautaire indépendant</span>
+        <span>© OpenFront and Contributors</span>
+        <a href="https://github.com/Baptiste-Boin/OpenFrontIO"
+          >Code source · AGPL-3.0</a
+        >
+        <span class="text-xs">${this.versionLabel}</span>
+        <lang-selector class="absolute right-4 top-3"></lang-selector>
+      </footer>`;
     return html`
       <footer
         class="[.in-game_&]:hidden bg-zinc-900/90 backdrop-blur-md flex flex-col items-center justify-center gap-1 pt-1 pb-3 text-white/50 w-full border-t border-white/10 shrink-0 relative z-50 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center lg:gap-0"

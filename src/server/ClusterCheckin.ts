@@ -117,7 +117,7 @@ export async function sendCheckin(
   fetchFn: typeof fetch = fetch,
 ): Promise<CheckinResult> {
   try {
-    const res = await fetchFn(`${ServerEnv.jwtIssuer()}/cluster/checkin`, {
+    const res = await fetchFn(`${ServerEnv.apiBaseUrl()}/cluster/checkin`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

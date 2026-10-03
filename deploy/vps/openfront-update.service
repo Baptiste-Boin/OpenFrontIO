@@ -1,0 +1,10 @@
+[Unit]
+Description=Deploy approved OpenFront main from GitHub
+After=network-online.target docker.service
+Wants=network-online.target
+ConditionPathExists=/srv/openfront/current/deploy/vps/deploy.sh
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /srv/openfront/current/deploy/vps/deploy.sh
+TimeoutStartSec=30min
+UMask=0077

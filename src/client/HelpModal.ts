@@ -94,27 +94,34 @@ export class HelpModal extends BaseModal {
           [&_td:nth-child(2)]:[unicode-bidi:plaintext]
           [&_td:nth-child(3)]:[unicode-bidi:plaintext]"
       >
-          <!-- In-game tutorial: starts a default solo game with the guide on -->
-          <section
-            class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/5 rounded-xl border border-white/10 px-5 py-4 mb-8"
-          >
-            <div>
-              <h3 class="!mt-0 !mb-1">
-                ${translateText("help_modal.in_game_tutorial")}
-              </h3>
-              <p class="!mb-0 text-sm">
-                ${translateText("help_modal.in_game_tutorial_desc")}
-              </p>
-            </div>
-            <button
-              class="shrink-0 hover:bg-white/5 px-6 py-2 text-xs font-bold transition-all duration-200 rounded-lg uppercase tracking-widest bg-malibu-blue/20 text-aquarius border border-malibu-blue/30 shadow-[var(--shadow-malibu-blue)]"
-              @click=${() =>
-                document.dispatchEvent(new CustomEvent("start-tutorial"))}
-            >
-              ${translateText("help_modal.in_game_tutorial_start")}
-            </button>
-          </section>
-
+          ${
+            window.BOOTSTRAP_CONFIG?.platformApiBase
+              ? null
+              : html`
+                  <!-- In-game tutorial: starts a default solo game with the guide on -->
+                  <section
+                    class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/5 rounded-xl border border-white/10 px-5 py-4 mb-8"
+                  >
+                    <div>
+                      <h3 class="!mt-0 !mb-1">
+                        ${translateText("help_modal.in_game_tutorial")}
+                      </h3>
+                      <p class="!mb-0 text-sm">
+                        ${translateText("help_modal.in_game_tutorial_desc")}
+                      </p>
+                    </div>
+                    <button
+                      class="shrink-0 hover:bg-white/5 px-6 py-2 text-xs font-bold transition-all duration-200 rounded-lg uppercase tracking-widest bg-malibu-blue/20 text-aquarius border border-malibu-blue/30 shadow-[var(--shadow-malibu-blue)]"
+                      @click=${() =>
+                        document.dispatchEvent(
+                          new CustomEvent("start-tutorial"),
+                        )}
+                    >
+                      ${translateText("help_modal.in_game_tutorial_start")}
+                    </button>
+                  </section>
+                `
+          }
           <!-- Video Tutorial Section -->
           <div class="flex items-center gap-3 mb-3">
             <div class="text-blue-400">

@@ -14,6 +14,7 @@ import {
 } from "../core/Schemas";
 import { toWireGameStartInfo } from "../core/Util";
 import { GameEnv } from "../core/configuration/Config";
+import { GameType } from "../core/game/Game";
 import { UserSettings } from "../core/game/UserSettings";
 import "./AccountModal";
 import "./AccountSettingsModal";
@@ -91,6 +92,7 @@ import { updateAccountNavButton } from "./NavAccountButton";
 import { initNavigation } from "./Navigation";
 import "./NewsModal";
 import { capturePagePin } from "./PagePin";
+import { mountPlatformGameConfigurator } from "./PlatformGameConfigurator";
 import { fallbackPlayerName, LAPSE_NOTICE_KEY } from "./PlayerName";
 import "./PlayerProfileModal";
 import {
@@ -436,10 +438,12 @@ class Client {
       tag: "language-modal",
       pageId: "page-language",
     });
-    modalRouter.register("single-player", {
-      tag: "single-player-modal",
-      pageId: "page-single-player",
-    });
+    if (!window.BOOTSTRAP_CONFIG?.platformApiBase) {
+      modalRouter.register("single-player", {
+        tag: "single-player-modal",
+        pageId: "page-single-player",
+      });
+    }
     modalRouter.register("ranked", {
       tag: "ranked-modal",
       pageId: "page-ranked",
@@ -472,7 +476,9 @@ class Client {
     // so rendering the widget there just fails — and replays never
     // send a token anyway (see getTurnstileToken below).
     const turnstilePrefetch =
-      isDesktopShell() || isReplayShellHost(window.location.hostname)
+      window.BOOTSTRAP_CONFIG?.platformApiBase ||
+      isDesktopShell() ||
+      isReplayShellHost(window.location.hostname)
         ? null
         : getTurnstileToken();
     // A prefetch that fails is not an error anyone has asked about yet: the
@@ -693,7 +699,10 @@ class Client {
       const isAdFree =
         userMeResponse !== false && userMeResponse.player?.adfree === true;
       window.adsEnabled =
-        !isAdFree && !crazyGamesSDK.isOnCrazyGames() && !isDesktopShell();
+        !window.BOOTSTRAP_CONFIG?.platformApiBase &&
+        !isAdFree &&
+        !crazyGamesSDK.isOnCrazyGames() &&
+        !isDesktopShell();
       // Ad-eligible users only: paid/adfree users must never load Admiral (its
       // adblock popup fires autonomously once the payload runs). Start watching
       // adblock state; once a blocker is ever detected the in-game ad is
@@ -1457,6 +1466,12 @@ class Client {
 
   private async handleJoinLobby(event: CustomEvent<JoinLobbyEvent>) {
     const lobby = event.detail;
+    if (
+      window.BOOTSTRAP_CONFIG?.platformApiBase &&
+      (lobby.source === "singleplayer" ||
+        lobby.gameStartInfo?.config.gameType === GameType.Singleplayer)
+    )
+      return;
     if (this.usernameInput && !this.usernameInput.canPlay()) {
       // The singleplayer modal shows the starting overlay before dispatching
       // join-lobby; a refused join must release it or it stays over the menu.
@@ -1963,6 +1978,7 @@ class Client {
     lobby: JoinLobbyEvent,
   ): Promise<string | null> {
     if (
+      window.BOOTSTRAP_CONFIG?.platformApiBase ||
       ClientEnv.env() === GameEnv.Dev ||
       isDesktopShell() ||
       // Single-player and replays: no server to verify a token against (and
@@ -2002,6 +2018,7 @@ const hideCrazyGamesElements = () => {
 
 // Initialize the client when the DOM is loaded
 const bootstrap = () => {
+  if (mountPlatformGameConfigurator()) return;
   // First, so the error hooks are in place for everything below. No-op
   // without a collector URL (see Telemetry.ts); never awaited.
   void initTelemetry();

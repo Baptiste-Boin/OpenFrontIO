@@ -34,6 +34,7 @@ declare global {
     // a static page (docs/MultiServer.md, "Server list v2") carries none of
     // it — the API's list answers instead.
     BOOTSTRAP_CONFIG?: {
+      platformApiBase?: string;
       gitCommit?: string;
       assetManifest?: AssetManifest;
       cdnBase?: string;

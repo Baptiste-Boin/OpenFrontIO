@@ -2,6 +2,7 @@ import { html, LitElement, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
 import { assetUrl } from "../../core/AssetUrls";
 import { NavNotificationsController } from "./NavNotificationsController";
+import "./NavUtilityIcons";
 
 const MOBILE_ITEM =
   "nav-menu-item block w-full text-left font-bold uppercase tracking-[0.05em] " +
@@ -63,6 +64,16 @@ export class MobileNavBar extends LitElement {
   }
 
   render() {
+    if (window.BOOTSTRAP_CONFIG?.platformApiBase)
+      return html` <nav class="flex flex-col gap-5 p-6 text-white">
+        <a href="/" class="text-malibu-blue font-bold">AzertixYT · OpenFront</a>
+        <a href="/">Jouer</a><a href="/tournaments">Tournois et classement</a>
+        <a href="/profile">Mon profil</a><a href="/admin">Administration</a>
+        <a href="/platform-api/auth/login/discord" class="text-malibu-blue"
+          >Connexion Discord</a
+        >
+        <nav-utility-icons size="mobile"></nav-utility-icons>
+      </nav>`;
     window.currentPageId ??= "page-play";
     const currentPage = window.currentPageId;
 

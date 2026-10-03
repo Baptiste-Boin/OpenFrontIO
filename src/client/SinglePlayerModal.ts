@@ -14,7 +14,7 @@ import {
   UnitType,
 } from "../core/game/Game";
 import { UserSettings } from "../core/game/UserSettings";
-import { PlayerCosmetics, TeamCountConfig } from "../core/Schemas";
+import { GameConfig, PlayerCosmetics, TeamCountConfig } from "../core/Schemas";
 import { generateID } from "../core/Util";
 import { responseHasLinkedIdentity } from "./AccountIdentity";
 import "./components/baseComponents/Button";
@@ -23,6 +23,7 @@ import { BaseModal } from "./components/BaseModal";
 import "./components/GameConfigSettings";
 import { MEDAL_ORDER, medalIcon } from "./components/map/Medals";
 import "./components/ToggleInputCard";
+import type { ToggleInputCard } from "./components/ToggleInputCard";
 import { modalHeader } from "./components/ui/ModalHeader";
 import { getPlayerCosmetics, prewarmCosmetics } from "./Cosmetics";
 import { crazyGamesSDK } from "./CrazyGamesSDK";
@@ -165,7 +166,26 @@ async function loadAchievementEligibleMaps(): Promise<Set<GameMapType> | null> {
 
 @customElement("single-player-modal")
 export class SinglePlayerModal extends BaseModal {
-  protected routerName = "single-player";
+  protected routerName: string | undefined = "single-player";
+
+  @state() public configurationOnly = false;
+  @state() private nationCountLoading = false;
+
+  public override open(args?: Record<string, unknown>): void {
+    if (window.BOOTSTRAP_CONFIG?.platformApiBase && !this.configurationOnly)
+      return;
+    super.open(args);
+  }
+
+  public override confirmBeforeClose(): boolean {
+    return !this.configurationOnly;
+  }
+
+  public openConfiguration(): void {
+    this.configurationOnly = true;
+    this.routerName = undefined;
+    this.open();
+  }
 
   @state() private selectedMap: GameMapType = DEFAULT_OPTIONS.selectedMap;
   @state() private selectedDifficulty: Difficulty =
@@ -322,6 +342,10 @@ export class SinglePlayerModal extends BaseModal {
   }
 
   protected renderHeaderSlot() {
+    if (this.configurationOnly)
+      return html`<h2 class="px-6 pt-5 text-xl font-bold text-white">
+        Carte et règles du jeu
+      </h2>`;
     return modalHeader({
       title: translateText("main.solo") || "Solo",
       onBack: () => this.close(),
@@ -570,7 +594,8 @@ export class SinglePlayerModal extends BaseModal {
 
         <!-- Footer Action -->
         <div class="p-6 border-t border-white/10 bg-black/20 shrink-0">
-          ${responseHasLinkedIdentity(this.userMeResponse) &&
+          ${!this.configurationOnly &&
+          responseHasLinkedIdentity(this.userMeResponse) &&
           this.hasOptionsChanged()
             ? html`<div
                 class="mb-4 px-4 py-3 rounded-xl bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 text-xs font-bold uppercase tracking-wider text-center"
@@ -582,10 +607,14 @@ export class SinglePlayerModal extends BaseModal {
             variant="primary"
             width="block"
             size="lg"
-            translationKey=${this.starting
-              ? "game_settings.starting"
-              : "game_settings.start"}
-            .disable=${this.starting}
+            title=${this.configurationOnly ? "Utiliser ces réglages" : ""}
+            translationKey=${this.configurationOnly
+              ? ""
+              : this.starting
+                ? "game_settings.starting"
+                : "game_settings.start"}
+            .disable=${this.starting ||
+            (this.configurationOnly && this.nationCountLoading)}
             @click=${this.startGame}
           ></o-button>
         </div>
@@ -647,6 +676,7 @@ export class SinglePlayerModal extends BaseModal {
    * card for new players).
    */
   public async startTutorial(): Promise<void> {
+    if (window.BOOTSTRAP_CONFIG?.platformApiBase) return;
     // The modal never opens on this path, so onOpen's prewarm never runs.
     // Overlap it with the manifest load below.
     void prewarmCosmetics();
@@ -700,7 +730,7 @@ export class SinglePlayerModal extends BaseModal {
     // case. It does not help when the backend is unreachable: fetchCosmetics
     // deliberately does not cache a failure, so the click re-pays one bounded
     // attempt. Remembering an unreachable backend is OPE-403.
-    void prewarmCosmetics();
+    if (!this.configurationOnly) void prewarmCosmetics();
   }
 
   private handleSelectRandomMap() {
@@ -1035,10 +1065,84 @@ export class SinglePlayerModal extends BaseModal {
     );
   }
 
+  private buildGameConfig(
+    gameType: GameType,
+    finalMaxTimerValue?: number,
+  ): GameConfig {
+    return {
+      gameMap: this.selectedMap,
+      gameMapSize: this.compactMap ? GameMapSize.Compact : GameMapSize.Normal,
+      gameType,
+      gameMode: this.gameMode,
+      playerTeams: this.teamCount,
+      difficulty: this.selectedDifficulty,
+      maxTimerValue: finalMaxTimerValue,
+      bots: this.bots,
+      infiniteGold: this.infiniteGold,
+      donateGold: this.gameMode === GameMode.Team,
+      donateTroops: this.gameMode === GameMode.Team,
+      infiniteTroops: this.infiniteTroops,
+      instantBuild: this.instantBuild,
+      randomSpawn: this.randomSpawn,
+      disabledUnits: this.disabledUnits.filter((unit): unit is UnitType =>
+        Object.values(UnitType).includes(unit),
+      ),
+      nations: sliderToNationsConfig(this.nations, this.defaultNationCount),
+      ...(this.goldMultiplier && this.goldMultiplierValue
+        ? { goldMultiplier: this.goldMultiplierValue }
+        : {}),
+      ...(this.startingGold && this.startingGoldValue !== undefined
+        ? {
+            startingGold: Math.round(this.startingGoldValue * 1_000_000),
+          }
+        : {}),
+      ...(this.customAlliances
+        ? { customAllianceDuration: this.customAllianceMinutes ?? 0 }
+        : {}),
+      ...(this.waterNukes ? { waterNukes: true } : {}),
+      ...(this.doomsdayClock
+        ? {
+            doomsdayClock: {
+              enabled: true,
+              speed: this.doomsdayClockSpeed,
+            },
+          }
+        : {}),
+      ...(this.overtime
+        ? {
+            overtime: {
+              enabled: true,
+              startMinutes: this.overtimeStartMinutes ?? 30,
+            },
+          }
+        : {}),
+    };
+  }
+
   private async startGame() {
+    if (window.BOOTSTRAP_CONFIG?.platformApiBase && !this.configurationOnly)
+      return;
     // A second click while the first is still resolving would dispatch a
     // second join-lobby for a different gameID.
-    if (this.starting) return;
+    if (this.starting || (this.configurationOnly && this.nationCountLoading))
+      return;
+    // Numeric cards that commit on blur must also commit when the organizer
+    // validates directly. The editor must save the values currently displayed.
+    if (this.configurationOnly) {
+      for (const card of this.querySelectorAll<ToggleInputCard>(
+        "toggle-input-card",
+      )) {
+        if (!card.checked) continue;
+        const input = card.querySelector("input");
+        if (!input) continue;
+        if (!input.reportValidity()) {
+          input.focus();
+          return;
+        }
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
     // Validate and clamp maxTimer setting before starting
     let finalMaxTimerValue: number | undefined = undefined;
     if (this.maxTimer) {
@@ -1058,6 +1162,16 @@ export class SinglePlayerModal extends BaseModal {
       }
       // Clamp value to valid range
       finalMaxTimerValue = Math.max(1, Math.min(120, this.maxTimerValue));
+    }
+
+    if (this.configurationOnly) {
+      this.dispatchEvent(
+        new CustomEvent("game-config-selected", {
+          detail: this.buildGameConfig(GameType.Private, finalMaxTimerValue),
+          bubbles: true,
+        }),
+      );
+      return;
     }
 
     // Everything past this point awaits something, some of it network-bound.
@@ -1130,62 +1244,10 @@ export class SinglePlayerModal extends BaseModal {
                   cosmetics,
                 },
               ],
-              config: {
-                gameMap: this.selectedMap,
-                gameMapSize: this.compactMap
-                  ? GameMapSize.Compact
-                  : GameMapSize.Normal,
-                gameType: GameType.Singleplayer,
-                gameMode: this.gameMode,
-                playerTeams: this.teamCount,
-                difficulty: this.selectedDifficulty,
-                maxTimerValue: finalMaxTimerValue,
-                bots: this.bots,
-                infiniteGold: this.infiniteGold,
-                donateGold: this.gameMode === GameMode.Team,
-                donateTroops: this.gameMode === GameMode.Team,
-                infiniteTroops: this.infiniteTroops,
-                instantBuild: this.instantBuild,
-                randomSpawn: this.randomSpawn,
-                disabledUnits: this.disabledUnits.filter(
-                  (unit): unit is UnitType =>
-                    Object.values(UnitType).includes(unit),
-                ),
-                nations: sliderToNationsConfig(
-                  this.nations,
-                  this.defaultNationCount,
-                ),
-                ...(this.goldMultiplier && this.goldMultiplierValue
-                  ? { goldMultiplier: this.goldMultiplierValue }
-                  : {}),
-                ...(this.startingGold && this.startingGoldValue !== undefined
-                  ? {
-                      startingGold: Math.round(
-                        this.startingGoldValue * 1_000_000,
-                      ),
-                    }
-                  : {}),
-                ...(this.customAlliances
-                  ? { customAllianceDuration: this.customAllianceMinutes ?? 0 }
-                  : {}),
-                ...(this.waterNukes ? { waterNukes: true } : {}),
-                ...(this.doomsdayClock
-                  ? {
-                      doomsdayClock: {
-                        enabled: true,
-                        speed: this.doomsdayClockSpeed,
-                      },
-                    }
-                  : {}),
-                ...(this.overtime
-                  ? {
-                      overtime: {
-                        enabled: true,
-                        startMinutes: this.overtimeStartMinutes ?? 30,
-                      },
-                    }
-                  : {}),
-              },
+              config: this.buildGameConfig(
+                GameType.Singleplayer,
+                finalMaxTimerValue,
+              ),
               lobbyCreatedAt: Date.now(), // ms; server should be authoritative in MP
             },
             source: "singleplayer",
@@ -1217,6 +1279,7 @@ export class SinglePlayerModal extends BaseModal {
 
   private async loadNationCount() {
     const currentMap = this.selectedMap;
+    this.nationCountLoading = true;
     try {
       const mapData = this.mapLoader.getMapData(currentMap);
       const manifest = await mapData.manifest();
@@ -1230,6 +1293,8 @@ export class SinglePlayerModal extends BaseModal {
     } catch (error) {
       console.warn("Failed to load nation count", error);
       // Leave existing values unchanged so the UI stays consistent
+    } finally {
+      if (this.selectedMap === currentMap) this.nationCountLoading = false;
     }
   }
 }

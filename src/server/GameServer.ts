@@ -1596,10 +1596,13 @@ export class GameServer {
     const now = Date.now();
 
     const lessThanLifetime = this.startsAt ? Date.now() < this.startsAt : true;
+    // Platform salons belong to the organiser: filling the last seat must
+    // not bypass the administration's Start action.
     if (
       lessThanLifetime &&
       !this.hasStarted() &&
-      !this.hasReachedMaxPlayerCount
+      (!this.hasReachedMaxPlayerCount ||
+        (ServerEnv.platformAuth() && !this.isPublic()))
     ) {
       return GamePhase.Lobby;
     }

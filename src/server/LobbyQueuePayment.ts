@@ -19,7 +19,7 @@ export async function payForLobbyQueue(
 ): Promise<LobbyQueuePaymentResult> {
   try {
     const response = await fetch(
-      `${ServerEnv.jwtIssuer()}/users/@me/lobby_queue`,
+      `${ServerEnv.apiBaseUrl()}/users/@me/lobby_queue`,
       {
         method: "POST",
         signal: AbortSignal.timeout(5000),

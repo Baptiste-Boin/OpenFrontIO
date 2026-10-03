@@ -1,0 +1,150 @@
+name: openfront
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "5m"
+    max-file: "3"
+services:
+  openfront:
+    image: azertix-openfront:${RELEASE_SHA:?release required}
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        GIT_COMMIT: ${RELEASE_SHA}
+    restart: unless-stopped
+    init: true
+    environment:
+      GAME_ENV: prod
+      DOMAIN: ${DOMAIN:?domain required}
+      GAME_HOST: ${DOMAIN}
+      SITE_HOST: ${DOMAIN}
+      NUM_WORKERS: "1"
+      INSTANCE_LETTER: a
+      GIT_COMMIT: ${RELEASE_SHA}
+      PLATFORM_AUTH: discord
+      PLATFORM_API_BASE: /platform-api
+      JWT_ISSUER: ${APP_URL}/platform-api
+      API_INTERNAL_URL: http://platform:3400
+      API_KEY: ${API_KEY:?key required}
+      ADMIN_BOT_API_KEY: ${ADMIN_BOT_API_KEY:?key required}
+      TURNSTILE_SITE_KEY: self-hosted-discord
+      LOBBY_COORDINATOR: "off"
+      CDN_BASE: ${APP_URL:?public origin required}
+    ports: ["127.0.0.1:3300:80"]
+    networks: [edge, game]
+    mem_limit: 900m
+    cpus: 1.25
+    pids_limit: 180
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/api/health"]
+      interval: 20s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    logging: *logging
+  platform:
+    image: azertix-platform:${RELEASE_SHA:?release required}
+    build:
+      context: ../../platform
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      GIT_COMMIT: ${RELEASE_SHA}
+      APP_URL: ${APP_URL:?url required}
+      DATABASE_URL: postgresql://openfront:${POSTGRES_PASSWORD:?password required}@postgres:5432/openfront
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET:?secret required}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?key required}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:?key required}
+      API_KEY: ${API_KEY}
+      ADMIN_BOT_API_KEY: ${ADMIN_BOT_API_KEY}
+      GAME_INTERNAL_URL: http://openfront:80
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
+      ADMIN_DISCORD_IDS: ${ADMIN_DISCORD_IDS:-}
+      OWNER_ACCESS_HASH: ${OWNER_ACCESS_HASH:-}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      DISCORD_ANNOUNCEMENT_CHANNEL_ID: ${DISCORD_ANNOUNCEMENT_CHANNEL_ID:-}
+    ports: ["127.0.0.1:3400:3400"]
+    networks: [edge, game, data]
+    read_only: true
+    tmpfs: ["/tmp:size=16m"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    mem_limit: 256m
+    cpus: 0.50
+    pids_limit: 80
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3400/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: openfront
+      POSTGRES_USER: openfront
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: ["postgres:/var/lib/postgresql/data"]
+    networks: [data]
+    mem_limit: 192m
+    cpus: 0.50
+    shm_size: 64m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openfront -d openfront"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging: *logging
+  redis:
+    image: redis:7-alpine
+    command:
+      [
+        "redis-server",
+        "--maxmemory",
+        "32mb",
+        "--maxmemory-policy",
+        "noeviction",
+        "--appendonly",
+        "yes",
+      ]
+    restart: unless-stopped
+    volumes: ["redis:/data"]
+    networks: [data]
+    mem_limit: 64m
+    cpus: 0.25
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging: *logging
+networks:
+  edge: {}
+  game:
+    internal: true
+  data:
+    internal: true
+volumes:
+  postgres: {}
+  redis: {}

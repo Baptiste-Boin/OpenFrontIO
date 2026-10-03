@@ -78,6 +78,12 @@ export async function renderHtmlContent(
     : {};
   return ejs.render(htmlContent, {
     ...perServerLocals,
+    platformOrigin: process.env.PLATFORM_API_BASE
+      ? `https://${ServerEnv.jwtAudience()}`
+      : undefined,
+    platformApiBase: process.env.PLATFORM_API_BASE
+      ? JSON.stringify(process.env.PLATFORM_API_BASE)
+      : undefined,
     gitCommit: JSON.stringify(ServerEnv.gitCommit()),
     assetManifest: JSON.stringify(assetManifest),
     cdnBase: JSON.stringify(cdnBase),
